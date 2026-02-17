@@ -1,0 +1,35 @@
+# Environment & Secrets
+.env
+credentials/
+*.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Logs & Cache
+logs/
+cache/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Testing artifacts
+tests/__pycache__/
+.pytest_cache/
