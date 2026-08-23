@@ -6,8 +6,10 @@ Extracts business contact information FROM directory/aggregator sites
 import re
 import json
 import requests
+import asyncio
 from bs4 import BeautifulSoup
 from modules.utils import logger, retry_on_failure, is_valid_email, format_phone
+from modules.http_client import AsyncHTTPClient
 import config
 
 
@@ -68,7 +70,7 @@ def is_extractable_directory(url):
 # ============================================================
 
 @retry_on_failure(max_retries=2)
-def extract_from_directory(url, directory_type=None):
+async def extract_from_directory(url, directory_type=None):
     """
     Extract business data from directory page
     
@@ -99,8 +101,11 @@ def extract_from_directory(url, directory_type=None):
             'Accept-Language': 'en-US,en;q=0.5',
         }
         
-        response = requests.get(url, headers=headers, timeout=15)
-        response.raise_for_status()
+        async with AsyncHTTPClient() as client:
+            response = await client.get(url, headers=headers)
+            if not response:
+                logger.error(f"Error extracting from directory {url}: Request failed")
+                raise Exception("Request failed or returned non-200 status")
         
         html = response.text
         soup = BeautifulSoup(html, 'html.parser')

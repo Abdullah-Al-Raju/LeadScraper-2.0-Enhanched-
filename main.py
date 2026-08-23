@@ -297,13 +297,14 @@ def process_business(sheet, row, progress, stats, cache=None):
             try:
                 # Check if it's a directory site
                 from modules.sources.directory_extractor import is_extractable_directory, extract_from_directory
+                import asyncio
                 
                 is_dir, dir_type = is_extractable_directory(source_urls['website'])
                 
                 if is_dir:
                     # Extract FROM the directory
                     logger.info(f"Found {dir_type} directory - extracting...")
-                    dir_data = extract_from_directory(source_urls['website'], dir_type)
+                    dir_data = asyncio.run(extract_from_directory(source_urls['website'], dir_type))
                     if dir_data:
                         sources_data.append(dir_data)
                         logger.info(f"Directory extraction successful")
