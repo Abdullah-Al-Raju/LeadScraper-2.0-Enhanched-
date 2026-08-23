@@ -17,7 +17,7 @@ def test_rate_limiter_initialization(rate_limiter):
     """Test that RateLimiter initializes with the correct state."""
     # Check calls is correctly initialized as defaultdict of list
     assert isinstance(rate_limiter.calls, defaultdict)
-    assert isinstance(rate_limiter.calls['test'], list)
+    assert rate_limiter.calls.default_factory is list
 
     # Check that limits are correctly initialized
     expected_limits = {
