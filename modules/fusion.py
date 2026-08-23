@@ -199,34 +199,17 @@ def calculate_confidence_score(merged_data, field_sources):
     # Score from cross-verification (max 40 points)
     verification_score = 0
     
-    # Phone verification (important)
-    phone_dict = field_sources.get('phone_numbers', {})
-    if phone_dict:
-        max_phone_sources = max(len(sources) for sources in phone_dict.values())
-        if max_phone_sources >= 3:
-            verification_score += 15
-        elif max_phone_sources == 2:
-            verification_score += 10
-        elif max_phone_sources == 1:
-            verification_score += 5
-    
-    # Email verification
-    email_dict = field_sources.get('email_addresses', {})
-    if email_dict:
-        max_email_sources = max(len(sources) for sources in email_dict.values())
-        if max_email_sources >= 3:
-            verification_score += 15
-        elif max_email_sources == 2:
-            verification_score += 10
-        elif max_email_sources == 1:
-            verification_score += 5
+    # Phone and Email verification (important)
+    for field in ['phone_numbers', 'email_addresses']:
+        field_dict = field_sources.get(field, {})
+        if field_dict:
+            max_sources = max(len(sources) for sources in field_dict.values())
+            verification_score += min(max_sources * 5, 15)
     
     # Address verification
     address_sources = field_sources.get('street_address', [])
-    if len(address_sources) >= 2:
-        verification_score += 10
-    elif len(address_sources) == 1:
-        verification_score += 5
+    if address_sources:
+        verification_score += min(len(address_sources) * 5, 10)
     
     score += min(verification_score, 40)
     
@@ -235,13 +218,8 @@ def calculate_confidence_score(merged_data, field_sources):
     important_fields = ['business_name', 'phone_numbers', 'email_addresses', 'street_address', 'website']
     
     for field in important_fields:
-        value = merged_data.get(field)
-        if value:
-            if isinstance(value, list):
-                if len(value) > 0:
-                    completeness_score += 6
-            else:
-                completeness_score += 6
+        if merged_data.get(field):
+            completeness_score += 6
     
     score += min(completeness_score, 30)
     
