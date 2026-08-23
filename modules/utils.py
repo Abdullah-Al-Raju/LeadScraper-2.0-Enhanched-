@@ -241,9 +241,15 @@ def normalize_url(url):
     """
     if not url:
         return ""
+
+    # Convert to string and strip whitespace
+    url = str(url).strip()
+
+    if not url:
+        return ""
     
     # Add scheme if missing
-    if not url.startswith(('http://', 'https://')):
+    if not url.startswith(('http://', 'https://', 'http', 'https')):
         url = 'https://' + url
     
     # Remove trailing slash
