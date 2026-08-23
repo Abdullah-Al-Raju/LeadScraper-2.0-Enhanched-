@@ -1,0 +1,3 @@
+pytest
+pytest-custom_exit_code
+flake8
