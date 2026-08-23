@@ -6,7 +6,7 @@ Searches and extracts contact information from Instagram Business Profiles
 import re
 import requests
 from bs4 import BeautifulSoup
-from modules.utils import logger, retry_on_failure, is_valid_email, format_phone
+from modules.utils import logger, retry_on_failure, async_retry_on_failure, is_valid_email, format_phone
 import config
 
 
@@ -91,8 +91,8 @@ def _clean_instagram_url(url):
 # INSTAGRAM DATA EXTRACTION
 # ============================================================
 
-@retry_on_failure(max_retries=2)
-def extract_instagram_data(profile_url):
+@async_retry_on_failure(max_retries=2)
+async def extract_instagram_data(profile_url):
     """
     Extract business information from Instagram profile
     
@@ -115,9 +115,13 @@ def extract_instagram_data(profile_url):
             'Accept-Language': 'en-US,en;q=0.5',
         }
         
-        response = requests.get(profile_url, headers=headers, timeout=15)
-        response.raise_for_status()
+        from modules.http_client import get_http_client
+        http = await get_http_client()
+        response = await http.get(profile_url, headers=headers, timeout=15)
         
+        if not response:
+            return None
+
         html = response.text
         soup = BeautifulSoup(html, 'html.parser')
         

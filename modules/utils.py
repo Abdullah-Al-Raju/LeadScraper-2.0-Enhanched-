@@ -451,3 +451,29 @@ class ProgressTracker:
             f"Completed {self.total} items in {elapsed/60:.1f} minutes "
             f"({elapsed/self.total:.1f}s per item)"
         )
+
+def async_retry_on_failure(max_retries=None, backoff=None, exceptions=(Exception,)):
+    """
+    Async retry decorator with exponential backoff
+    """
+    import asyncio
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            retries = max_retries or config.MAX_RETRIES
+            backoff_time = backoff or config.RETRY_BACKOFF
+
+            for attempt in range(retries + 1):
+                try:
+                    return await func(*args, **kwargs)
+                except exceptions as e:
+                    if attempt == retries:
+                        logger.error(f"{func.__name__} failed after {retries} retries: {e}")
+                        raise
+
+                    sleep_time = backoff_time * (2 ** attempt)
+                    logger.warning(f"Retry {attempt + 1}/{retries} for {func.__name__} in {sleep_time}s due to: {e}")
+                    await asyncio.sleep(sleep_time)
+            return None
+        return wrapper
+    return decorator
