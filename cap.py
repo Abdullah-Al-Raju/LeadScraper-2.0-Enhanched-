@@ -42,8 +42,8 @@ COMMAND: {command_string}
     try:
         # Use Popen for real-time output streaming
         process = subprocess.Popen(
-            command_string,
-            shell=True,
+            command_args,
+            shell=False,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
