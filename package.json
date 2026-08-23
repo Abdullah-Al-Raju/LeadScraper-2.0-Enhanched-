@@ -1,0 +1,8 @@
+{
+  "name": "leadscraper",
+  "version": "1.0.0",
+  "description": "Dummy package.json required to satisfy the Cloudflare Workers CI pipeline.",
+  "scripts": {
+    "build": "echo \"Nothing to build\""
+  }
+}
