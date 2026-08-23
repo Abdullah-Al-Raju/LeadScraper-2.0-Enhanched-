@@ -11,8 +11,6 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.live import Live
 from rich import box
-from rich.text import Text
-import time
 
 # Global console instance
 console = Console()
@@ -58,15 +56,15 @@ def info(message):
 
 def section_header(title):
     """Print section header"""
-    console.print(f"\n{'='*60}", style="bold blue")
+    console.print(f"\n{'=' * 60}", style="bold blue")
     console.print(f"{title}", style="bold blue")
-    console.print(f"{'='*60}", style="bold blue")
+    console.print(f"{'=' * 60}", style="bold blue")
 
 
 def create_progress_bar(description="Processing"):
     """
     Create a progress bar
-    
+
     Returns:
         Progress object
     """
@@ -84,7 +82,7 @@ def create_progress_bar(description="Processing"):
 def create_status_panel(phase, business, progress, model, elapsed, eta):
     """
     Create live status panel
-    
+
     Args:
         phase: Current phase
         business: Current business name
@@ -92,7 +90,7 @@ def create_status_panel(phase, business, progress, model, elapsed, eta):
         model: Current AI model
         elapsed: Elapsed time
         eta: Estimated time remaining
-        
+
     Returns:
         Panel object
     """
@@ -102,7 +100,7 @@ def create_status_panel(phase, business, progress, model, elapsed, eta):
 [bold]Model:[/bold]     {model}
 [bold]Elapsed:[/bold]   {elapsed}
 [bold]ETA:[/bold]       {eta}"""
-    
+
     return Panel(
         content,
         title="Current Operation",
@@ -114,10 +112,10 @@ def create_status_panel(phase, business, progress, model, elapsed, eta):
 def create_results_table(results):
     """
     Create results summary table
-    
+
     Args:
         results: List of dicts with keys: name, phone, email, confidence
-        
+
     Returns:
         Table object
     """
@@ -127,16 +125,22 @@ def create_results_table(results):
         show_header=True,
         header_style="bold cyan"
     )
-    
-    table.add_column("Business Name", style="white", no_wrap=False, max_width=30)
+
+    table.add_column(
+        "Business Name",
+        style="white",
+        no_wrap=False,
+        max_width=30)
     table.add_column("Phone", justify="center", style="white")
     table.add_column("Email", justify="center", style="white")
     table.add_column("Confidence", justify="right", style="white")
-    
+
     for r in results:
-        phone_status = "[green]YES[/green]" if r.get('phone') else "[red]NO[/red]"
-        email_status = "[green]YES[/green]" if r.get('email') else "[red]NO[/red]"
-        
+        phone_status = "[green]YES[/green]" if r.get(
+            'phone') else "[red]NO[/red]"
+        email_status = "[green]YES[/green]" if r.get(
+            'email') else "[red]NO[/red]"
+
         # Color code confidence
         conf = r.get('confidence', 0)
         if conf >= 80:
@@ -145,21 +149,21 @@ def create_results_table(results):
             conf_str = f"[yellow]{conf}%[/yellow]"
         else:
             conf_str = f"[red]{conf}%[/red]"
-        
+
         table.add_row(
             r.get('name', 'Unknown'),
             phone_status,
             email_status,
             conf_str
         )
-    
+
     return table
 
 
 def print_summary_box(total, success, partial, failed, total_time, avg_time):
     """
     Print final statistics box - Windows-safe ASCII version
-    
+
     Args:
         total: Total processed
         success: Success count
@@ -168,18 +172,18 @@ def print_summary_box(total, success, partial, failed, total_time, avg_time):
         total_time: Total time string
         avg_time: Average time string
     """
-    success_pct = success*100//total if total else 0
-    partial_pct = partial*100//total if total else 0
-    failed_pct = failed*100//total if total else 0
-    
+    success_pct = success * 100 // total if total else 0
+    partial_pct = partial * 100 // total if total else 0
+    failed_pct = failed * 100 // total if total else 0
+
     summary = f"""
 +===================================================+
 |              EXTRACTION COMPLETE                  |
 +---------------------------------------------------+
 |  Total Processed:     {total:<27} |
-|  Success:            {success} ({success_pct}%){' '*20} |
-|  Partial:            {partial} ({partial_pct}%){' '*20} |
-|  Failed:             {failed} ({failed_pct}%){' '*20} |
+|  Success:            {success} ({success_pct}%){' ' * 20} |
+|  Partial:            {partial} ({partial_pct}%){' ' * 20} |
+|  Failed:             {failed} ({failed_pct}%){' ' * 20} |
 |  Total Time:          {total_time:<26} |
 |  Avg per Business:    {avg_time:<26} |
 +===================================================+
@@ -195,31 +199,31 @@ def print_divider():
 def print_completion_separator(number, total=None):
     """
     Print beautiful 3-line completion separator - Windows-safe
-    
+
     Args:
         number: Item number just completed
         total: Total items (optional)
-    
+
     Example output:
         ------------------------------------------------------------
         --------------------------- 3/10 ---------------------------
         ------------------------------------------------------------
     """
     line = "-" * 60
-    
+
     if total:
         center_text = f" {number}/{total} "
     else:
         center_text = f" {number} "
-    
+
     # Calculate padding
     text_len = len(center_text)
     total_len = 60
     left_pad = (total_len - text_len) // 2
     right_pad = total_len - text_len - left_pad
-    
+
     middle_line = "-" * left_pad + center_text + "-" * right_pad
-    
+
     console.print()
     console.print(line, style="dim cyan")
     console.print(middle_line, style="bold cyan")
@@ -231,20 +235,25 @@ def print_completion_separator(number, total=None):
 def spinner(message, style="cyan"):
     """
     Context manager for spinner
-    
+
     Usage:
         with spinner("Processing..."):
             # do work
     """
     from rich.spinner import Spinner
-    
+
     class SpinnerContext:
         def __enter__(self):
-            self.live = Live(Spinner("dots", text=message, style=style), console=console)
+            self.live = Live(
+                Spinner(
+                    "dots",
+                    text=message,
+                    style=style),
+                console=console)
             self.live.start()
             return self
-        
+
         def __exit__(self, *args):
             self.live.stop()
-    
+
     return SpinnerContext()

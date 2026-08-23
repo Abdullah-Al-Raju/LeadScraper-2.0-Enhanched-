@@ -5,8 +5,6 @@ MAXIMUM EXTRACTION MODE - All possible patterns
 """
 
 import re
-import requests
-from bs4 import BeautifulSoup
 from modules.utils import logger, is_valid_email, format_phone
 import config
 
@@ -22,17 +20,18 @@ PHONE_PATTERNS = [
     r'880\s*1[3-9]\d{8}',                             # 880 1712345678
     r'\b01[3-9]\d{8}\b',                              # 01712345678
     r'\b0\d{10}\b',                                   # 01234567890
-    
+
     # International formats
-    r'\+\d{1,4}\s*\(?\d{1,4}\)?\s*\d{3,}[-.\s]?\d{3,}[-.\s]?\d{2,}',  # +1 (234) 567-8900
+    # +1 (234) 567-8900
+    r'\+\d{1,4}\s*\(?\d{1,4}\)?\s*\d{3,}[-.\s]?\d{3,}[-.\s]?\d{2,}',
     r'\(\d{3}\)\s*\d{3}[-.\s]?\d{4}',                # (123) 456-7890
     r'\b\d{3}[-.\s]\d{3}[-.\s]\d{4}\b',              # 123-456-7890
     r'\b\d{3}\.\d{3}\.\d{4}\b',                      # 123.456.7890
     r'\b\d{10,15}\b',                                 # 1234567890
-    
+
     # With keywords
     r'(?:phone|tel|call|mobile|contact|whatsapp|wa)[:|\s]+[\+\d][\d\s\-\(\)\.]{8,20}',
-    
+
     # Special formats
     r'\+\d+[-.\s]?\d+[-.\s]?\d+[-.\s]?\d+',          # +1-234-567-8900
 ]
@@ -74,16 +73,16 @@ SOCIAL_PATTERNS = {
 ADDRESS_PATTERNS = [
     # With keywords
     r'(?:address|location|located at|find us|visit us)[:|\s]+([^\n]{10,150})',
-    
+
     # Street addresses
     r'(\d+\s+[\w\s,]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr)[\w\s,]*)',
-    
+
     # Bangladesh format
     r'((?:House|H|Plot|P)[\s#]*\d+[,\s]+[\w\s,]{5,80})',
-    
+
     # General pattern with city
     r'(\d+[^,\n]*,\s*[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*,\s*[A-Z]{2}\s*\d{5})',
-    
+
     # GPS coordinates
     r'(?:GPS|coordinates|lat|long)[:|\s]*([-+]?\d+\.\d+,\s*[-+]?\d+\.\d+)',
 ]
@@ -120,21 +119,22 @@ DELIVERY_PATTERNS = {
 def extract_from_search_results(business_name, location, category=None):
     """
     Extract contact info FROM search result snippets (MAXIMUM mode)
-    
+
     Args:
         business_name: Business name or category
         location: Location/city
         category: Business category (optional)
-        
+
     Returns:
         Dictionary with extracted contact information
     """
-    logger.info(f"Extracting from search results for: {business_name} {location}")
-    
+    logger.info(
+        f"Extracting from search results for: {business_name} {location}")
+
     data = _empty_contacts()
     data['business_name'] = business_name
     data['source_type'] = 'search_results'
-    
+
     # Try multiple search queries
     queries = [
         f'"{business_name}" "{location}" phone contact address',
@@ -142,51 +142,56 @@ def extract_from_search_results(business_name, location, category=None):
         f'"{business_name}" "{location}" facebook instagram',
         f'{business_name} {location} hours location',
     ]
-    
+
     for query in queries:
         try:
             results_data = _search_and_extract(query)
-            
+
             if results_data:
                 data = _merge_search_data(data, results_data)
-                
+
         except Exception as e:
             logger.debug(f"Search query failed: {e}")
-    
+
     # Return if we found anything useful
     if data['phone_numbers'] or data['email_addresses'] or data['street_address']:
-        logger.info(f"Extracted from search results: {len(data['phone_numbers'])} phones, {len(data['email_addresses'])} emails")
+        logger.info(
+            f"Extracted from search results: {
+                len(
+                    data['phone_numbers'])} phones, {
+                len(
+                    data['email_addresses'])} emails")
         return data
-    
+
     return None
 
 
 def _search_and_extract(query):
     """
     Search and extract data from result snippets (MAXIMUM extraction)
-    
+
     Args:
         query: Search query
-        
+
     Returns:
         Dictionary with extracted data
     """
     try:
         from modules.search import search_duckduckgo
-        
+
         results = search_duckduckgo(query, max_results=10)
-        
+
         if not results:
             return None
-        
+
         data = _empty_contacts()
-        
+
         for result in results:
             title = result.get('title', '')
             snippet = result.get('body', '') or result.get('description', '')
             url = result.get('href', '') or result.get('link', '')
             combined_text = f"{title} {snippet} {url}"
-            
+
             # Extract EVERYTHING
             _extract_phones(combined_text, data)
             _extract_emails(combined_text, data)
@@ -195,9 +200,10 @@ def _search_and_extract(query):
             _extract_hours(combined_text, data)
             _extract_owner(combined_text, data)
             _extract_delivery_platforms(combined_text, data)
-        
-        return data if (data['phone_numbers'] or data['email_addresses']) else None
-        
+
+        return data if (data['phone_numbers']
+                        or data['email_addresses']) else None
+
     except Exception as e:
         logger.debug(f"Error extracting from search results: {e}")
         return None
@@ -221,21 +227,22 @@ def _extract_emails(text, data):
         emails = re.findall(pattern, text, re.IGNORECASE)
         for email in emails:
             if is_valid_email(email) and email not in data['email_addresses']:
-                if len(data['email_addresses']) < config.MAX_EMAILS_PER_BUSINESS:
+                if len(data['email_addresses']
+                       ) < config.MAX_EMAILS_PER_BUSINESS:
                     data['email_addresses'].append(email)
 
 
 def _extract_social_media(text, data):
     """Extract ALL social media links"""
     social_count = 0
-    
+
     for platform, patterns in SOCIAL_PATTERNS.items():
         for pattern in patterns:
             matches = re.findall(pattern, text, re.IGNORECASE)
             for match in matches:
                 if social_count >= config.MAX_SOCIAL_LINKS:
                     return
-                
+
                 # Reconstruct URL
                 if platform == 'facebook':
                     url = f"https://facebook.com/{match}"
@@ -277,7 +284,7 @@ def _extract_addresses(text, data):
     """Extract addresses"""
     if data.get('street_address'):
         return  # Already have address
-    
+
     for pattern in ADDRESS_PATTERNS:
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
@@ -293,11 +300,12 @@ def _extract_hours(text, data):
     """Extract business hours"""
     if data.get('business_hours'):
         return
-    
+
     for pattern in HOURS_PATTERNS:
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
-            hours = match.group(0).strip() if pattern == HOURS_PATTERNS[-1] else match.group(1).strip()
+            hours = match.group(0).strip(
+            ) if pattern == HOURS_PATTERNS[-1] else match.group(1).strip()
             data['business_hours'] = hours
             return
 
@@ -306,7 +314,7 @@ def _extract_owner(text, data):
     """Extract owner/manager name"""
     if data.get('owner_name'):
         return
-    
+
     for pattern in OWNER_PATTERNS:
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
@@ -318,11 +326,11 @@ def _extract_owner(text, data):
 def _extract_delivery_platforms(text, data):
     """Extract delivery platform availability"""
     delivery = []
-    
+
     for platform, pattern in DELIVERY_PATTERNS.items():
         if re.search(pattern, text, re.IGNORECASE):
             delivery.append(platform)
-    
+
     if delivery:
         data['delivery_platforms'] = ', '.join(delivery)
 
@@ -331,27 +339,39 @@ def _merge_search_data(existing, new_data):
     """Merge search result data"""
     if not new_data:
         return existing
-    
+
     # Merge lists
     for phone in new_data.get('phone_numbers', []):
         if phone not in existing['phone_numbers']:
             if len(existing['phone_numbers']) < config.MAX_PHONES_PER_BUSINESS:
                 existing['phone_numbers'].append(phone)
-    
+
     for email in new_data.get('email_addresses', []):
         if email not in existing['email_addresses']:
-            if len(existing['email_addresses']) < config.MAX_EMAILS_PER_BUSINESS:
+            if len(existing['email_addresses']
+                   ) < config.MAX_EMAILS_PER_BUSINESS:
                 existing['email_addresses'].append(email)
-    
+
     # Merge single values (take first found)
-    single_fields = ['street_address', 'business_hours', 'owner_name', 'delivery_platforms',
-                     'facebook', 'instagram', 'twitter', 'linkedin', 'whatsapp', 'youtube', 'tiktok',
-                     'facebook_url', 'instagram_url']
-    
+    single_fields = [
+        'street_address',
+        'business_hours',
+        'owner_name',
+        'delivery_platforms',
+        'facebook',
+        'instagram',
+        'twitter',
+        'linkedin',
+        'whatsapp',
+        'youtube',
+        'tiktok',
+        'facebook_url',
+        'instagram_url']
+
     for field in single_fields:
         if new_data.get(field) and not existing.get(field):
             existing[field] = new_data[field]
-    
+
     return existing
 
 
@@ -363,40 +383,42 @@ def extract_from_social_search(business_name, location, platform='facebook'):
     """
     Extract contact info by searching for social media pages
     and parsing the search result snippets (not the actual page)
-    
+
     Args:
         business_name: Business name
         location: Location
         platform: 'facebook' or 'instagram'
-        
+
     Returns:
         Dictionary with data OR URL to the page
     """
-    logger.info(f"Searching {platform.title()} for: {business_name} {location}")
-    
+    logger.info(
+        f"Searching {
+            platform.title()} for: {business_name} {location}")
+
     try:
         from modules.search import search_duckduckgo
-        
+
         if platform == 'facebook':
             query = f'"{business_name}" "{location}" site:facebook.com contact phone'
         else:
             query = f'"{business_name}" "{location}" site:instagram.com contact phone'
-        
+
         results = search_duckduckgo(query, max_results=5)
-        
+
         if not results:
             return None
-        
+
         data = _empty_contacts()
         data['business_name'] = business_name
         data['source_type'] = f'{platform}_search'
-        
+
         for result in results:
             url = result.get('href', '') or result.get('link', '')
             title = result.get('title', '')
             snippet = result.get('body', '') or result.get('description', '')
             combined_text = f"{title} {snippet} {url}"
-            
+
             # Store URL
             if url and platform in url:
                 if platform == 'facebook':
@@ -405,17 +427,22 @@ def extract_from_social_search(business_name, location, platform='facebook'):
                 else:
                     data['instagram'] = url
                     data['instagram_url'] = url
-            
+
             # Extract contact from snippet
             _extract_phones(combined_text, data)
             _extract_emails(combined_text, data)
-        
-        if data.get('facebook') or data.get('instagram') or data['phone_numbers'] or data['email_addresses']:
-            logger.info(f"Found {platform} data: {len(data['phone_numbers'])} phones, URL: {data.get('facebook') or data.get('instagram')}")
+
+        if data.get('facebook') or data.get(
+                'instagram') or data['phone_numbers'] or data['email_addresses']:
+            logger.info(
+                f"Found {platform} data: {
+                    len(
+                        data['phone_numbers'])} phones, URL: {
+                    data.get('facebook') or data.get('instagram')}")
             return data
-        
+
         return None
-        
+
     except Exception as e:
         logger.debug(f"Error in {platform} search extraction: {e}")
         return None
@@ -449,4 +476,3 @@ def _empty_contacts():
         'owner_name': None,
         'delivery_platforms': None,
     }
-
