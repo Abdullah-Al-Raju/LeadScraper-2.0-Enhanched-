@@ -95,6 +95,7 @@ def retry_on_failure(max_retries=None, backoff=None, exceptions=(Exception,)):
         exceptions: Tuple of exceptions to catch and retry
     """
     import asyncio
+
     def decorator(func):
         if asyncio.iscoroutinefunction(func):
             @functools.wraps(func)
