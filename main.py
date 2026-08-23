@@ -207,6 +207,165 @@ def run_pipeline():
         sys.exit(1)
 
 
+def _extract_from_sources(search_term, city, category, source_urls):
+    """
+    Extract data from multiple sources.
+
+    Args:
+        search_term: The business search term
+        city: The city location
+        category: The business category
+        source_urls: Dictionary of found source URLs
+
+    Returns:
+        List of data dictionaries extracted from sources
+    """
+    sources_data = []
+
+    # Extract from general search results (phones in snippets)
+    try:
+        from modules.sources.search_result_extractor import extract_from_search_results
+        search_data = extract_from_search_results(search_term, city, category)
+        if search_data:
+            sources_data.append(search_data)
+            logger.info(f"Search results extraction successful")
+    except Exception as e:
+        logger.warning(f"Search results extraction failed: {e}")
+
+    # Extract from Facebook search (snippet + URL)
+    if source_urls.get('facebook'):
+        try:
+            from modules.sources.search_result_extractor import extract_from_social_search
+            fb_data = extract_from_social_search(search_term, city, 'facebook')
+            if fb_data:
+                sources_data.append(fb_data)
+                logger.info(f"Facebook search extraction successful")
+        except Exception as e:
+            logger.warning(f"Facebook search extraction failed: {e}")
+
+    # Extract from Instagram search (snippet + URL)
+    if source_urls.get('instagram'):
+        try:
+            from modules.sources.search_result_extractor import extract_from_social_search
+            ig_data = extract_from_social_search(search_term, city, 'instagram')
+            if ig_data:
+                sources_data.append(ig_data)
+                logger.info(f"Instagram search extraction successful")
+        except Exception as e:
+            logger.warning(f"Instagram search extraction failed: {e}")
+
+    # Extract from website if found
+    if source_urls.get('website'):
+        try:
+            # Check if it's a directory site
+            from modules.sources.directory_extractor import is_extractable_directory, extract_from_directory
+
+            is_dir, dir_type = is_extractable_directory(source_urls['website'])
+
+            if is_dir:
+                # Extract FROM the directory
+                logger.info(f"Found {dir_type} directory - extracting...")
+                dir_data = extract_from_directory(source_urls['website'], dir_type)
+                if dir_data:
+                    sources_data.append(dir_data)
+                    logger.info(f"Directory extraction successful")
+            else:
+                # Normal website crawling
+                logger.info("Crawling traditional website...")
+                crawl_data = crawl_website(source_urls['website'])
+
+                if crawl_data:
+                    # Extract with category-aware AI
+                    website_contacts = extract_contacts(crawl_data, category=category)
+                    if website_contacts:
+                        website_contacts['source_type'] = 'website'
+                        website_contacts['website'] = source_urls['website']
+                        sources_data.append(website_contacts)
+                        logger.info(f"Website extraction successful")
+                else:
+                    logger.warning("Website crawl failed")
+
+        except Exception as e:
+            logger.error(f"Website processing error: {e}")
+
+    return sources_data
+
+
+def _fuse_and_save_data(sheet, row_number, search_term, sources_data, source_urls, progress, stats, cache=None):
+    """
+    Fuse extracted data and save to output.
+
+    Args:
+        sheet: Google Sheet object
+        row_number: Row number being processed
+        search_term: The business search term
+        sources_data: List of extracted data dictionaries
+        source_urls: Dictionary of found source URLs
+        progress: Progress tracker
+        stats: Statistics dictionary
+        cache: Progress cache
+
+    Returns:
+        Boolean indicating success
+    """
+    from modules.fusion import merge_multi_source_data
+    contacts = merge_multi_source_data(sources_data)
+
+    if not contacts:
+        update_status(sheet, row_number, config.STATUS_EXTRACTION_FAILED)
+        stats['extraction_failed'] += 1
+        progress.update("Fusion failed")
+        return False
+
+    # Set business name if not extracted (AI should extract the real name from website)
+    if not contacts.get('business_name'):
+        # Use search_term as fallback, but AI should have found the real name
+        contacts['business_name'] = search_term
+
+    # Set website if not already set
+    if not contacts.get('website') and source_urls.get('website'):
+        contacts['website'] = source_urls['website']
+
+    # Calculate completeness (for backward compatibility)
+    completeness = calculate_completeness(contacts)
+    confidence = contacts.get('confidence_score', 0)
+
+    logger.info(f"Results:")
+    logger.info(f"  - Business: {contacts.get('business_name', 'Unknown')}")
+    logger.info(f"  - Phones: {len(contacts.get('phone_numbers', []))}")
+    logger.info(f"  - Emails: {len(contacts.get('email_addresses', []))}")
+    logger.info(f"  - Address: {'Yes' if contacts.get('street_address') else 'No'}")
+    logger.info(f"  - Confidence: {confidence}%")
+    logger.info(f"  - Sources: {', '.join(contacts.get('sources_used', []))}")
+    logger.info(f"  - Verified: {', '.join(contacts.get('verified_fields', []))}")
+
+    # Step 4: Write to output
+    write_to_output(sheet, contacts)
+
+    # Show beautiful completion separator
+    display.print_completion_separator(progress.current, progress.total)
+
+    # Update status based on confidence score
+    if confidence >= 80:
+        update_status(sheet, row_number, "[DONE] High Confidence")
+        stats['success'] += 1
+        progress.update("Done")
+    elif confidence >= 60:
+        update_status(sheet, row_number, "[DONE]")
+        stats['success'] += 1
+        progress.update("Done")
+    else:
+        update_status(sheet, row_number, config.STATUS_PARTIAL)
+        stats['partial'] += 1
+        progress.update("Partial")
+
+    # ===== SAVE PROGRESS (NEW!) =====
+    if cache:
+        cache.add_completed_row(row_number)
+
+    return True
+
+
 def process_business(sheet, row, progress, stats, cache=None):
     """
     Process a single business using multi-source intelligence
@@ -258,73 +417,7 @@ def process_business(sheet, row, progress, stats, cache=None):
         # ===== MULTI-SOURCE EXTRACTION =====
         logger.info("Step 2: Extracting from all sources...")
         
-        sources_data = []
-        
-        # Extract from general search results (phones in snippets)
-        try:
-            from modules.sources.search_result_extractor import extract_from_search_results
-            search_data = extract_from_search_results(search_term, city, category)
-            if search_data:
-                sources_data.append(search_data)
-                logger.info(f"Search results extraction successful")
-        except Exception as e:
-            logger.warning(f"Search results extraction failed: {e}")
-        
-        # Extract from Facebook search (snippet + URL)
-        if source_urls.get('facebook'):
-            try:
-                from modules.sources.search_result_extractor import extract_from_social_search
-                fb_data = extract_from_social_search(search_term, city, 'facebook')
-                if fb_data:
-                    sources_data.append(fb_data)
-                    logger.info(f"Facebook search extraction successful")
-            except Exception as e:
-                logger.warning(f"Facebook search extraction failed: {e}")
-        
-        # Extract from Instagram search (snippet + URL)
-        if source_urls.get('instagram'):
-            try:
-                from modules.sources.search_result_extractor import extract_from_social_search
-                ig_data = extract_from_social_search(search_term, city, 'instagram')
-                if ig_data:
-                    sources_data.append(ig_data)
-                    logger.info(f"Instagram search extraction successful")
-            except Exception as e:
-                logger.warning(f"Instagram search extraction failed: {e}")
-        
-        # Extract from website if found
-        if source_urls.get('website'):
-            try:
-                # Check if it's a directory site
-                from modules.sources.directory_extractor import is_extractable_directory, extract_from_directory
-                
-                is_dir, dir_type = is_extractable_directory(source_urls['website'])
-                
-                if is_dir:
-                    # Extract FROM the directory
-                    logger.info(f"Found {dir_type} directory - extracting...")
-                    dir_data = extract_from_directory(source_urls['website'], dir_type)
-                    if dir_data:
-                        sources_data.append(dir_data)
-                        logger.info(f"Directory extraction successful")
-                else:
-                    # Normal website crawling
-                    logger.info("Crawling traditional website...")
-                    crawl_data = crawl_website(source_urls['website'])
-                    
-                    if crawl_data:
-                        # Extract with category-aware AI
-                        website_contacts = extract_contacts(crawl_data, category=category)
-                        if website_contacts:
-                            website_contacts['source_type'] = 'website'
-                            website_contacts['website'] = source_urls['website']
-                            sources_data.append(website_contacts)
-                            logger.info(f"Website extraction successful")
-                    else:
-                        logger.warning("Website crawl failed")
-                        
-            except Exception as e:
-                logger.error(f"Website processing error: {e}")
+        sources_data = _extract_from_sources(search_term, city, category, source_urls)
         
         # Check if we got any data
         if not sources_data:
@@ -335,62 +428,8 @@ def process_business(sheet, row, progress, stats, cache=None):
         
         # ===== DATA FUSION =====
         logger.info(f"Step 3: Fusing data from {len(sources_data)} sources...")
-
         
-        from modules.fusion import merge_multi_source_data
-        contacts = merge_multi_source_data(sources_data)
-        
-        if not contacts:
-            update_status(sheet, row_number, config.STATUS_EXTRACTION_FAILED)
-            stats['extraction_failed'] += 1
-            progress.update("Fusion failed")
-            return
-        
-        # Set business name if not extracted (AI should extract the real name from website)
-        if not contacts.get('business_name'):
-            # Use search_term as fallback, but AI should have found the real name
-            contacts['business_name'] = search_term
-        
-        # Set website if not already set
-        if not contacts.get('website') and source_urls.get('website'):
-            contacts['website'] = source_urls['website']
-        
-        # Calculate completeness (for backward compatibility)
-        completeness = calculate_completeness(contacts)
-        confidence = contacts.get('confidence_score', 0)
-        
-        logger.info(f"Results:")
-        logger.info(f"  - Business: {contacts.get('business_name', 'Unknown')}")
-        logger.info(f"  - Phones: {len(contacts.get('phone_numbers', []))}")
-        logger.info(f"  - Emails: {len(contacts.get('email_addresses', []))}")
-        logger.info(f"  - Address: {'Yes' if contacts.get('street_address') else 'No'}")
-        logger.info(f"  - Confidence: {confidence}%")
-        logger.info(f"  - Sources: {', '.join(contacts.get('sources_used', []))}")
-        logger.info(f"  - Verified: {', '.join(contacts.get('verified_fields', []))}")
-        
-        # Step 4: Write to output
-        write_to_output(sheet, contacts)
-        
-        # Show beautiful completion separator
-        display.print_completion_separator(progress.current, progress.total)
-        
-        # Update status based on confidence score
-        if confidence >= 80:
-            update_status(sheet, row_number, "[DONE] High Confidence")
-            stats['success'] += 1
-            progress.update("Done")
-        elif confidence >= 60:
-            update_status(sheet, row_number, "[DONE]")
-            stats['success'] += 1
-            progress.update("Done")
-        else:
-            update_status(sheet, row_number, config.STATUS_PARTIAL)
-            stats['partial'] += 1
-            progress.update("Partial")
-        
-        # ===== SAVE PROGRESS (NEW!) =====
-        if cache:
-            cache.add_completed_row(row_number)
+        _fuse_and_save_data(sheet, row_number, search_term, sources_data, source_urls, progress, stats, cache)
         
     except Exception as e:
         logger.error(f"Error processing {display_name}: {e}", exc_info=True)
