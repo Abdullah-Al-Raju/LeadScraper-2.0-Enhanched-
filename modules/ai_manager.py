@@ -36,6 +36,61 @@ class AIManager:
         self.failed_models = {}  # {model: failed_time}
         self.cooldown_period = 60  # seconds before retrying failed model
         
+    def _make_request(self, model, system_prompt, user_prompt, temperature):
+        """Execute the HTTP POST request to the API."""
+        return requests.post(
+            self.base_url,
+            headers={
+                'Authorization': f'Bearer {self.api_key}',
+                'Content-Type': 'application/json',
+            },
+            json={
+                'model': model,
+                'messages': [
+                    {'role': 'system', 'content': system_prompt},
+                    {'role': 'user', 'content': user_prompt}
+                ],
+                'temperature': temperature
+            },
+            timeout=30
+        )
+
+    def _handle_response_errors(self, response, model, consecutive_failures, max_consecutive_failures):
+        """
+        Handle specific HTTP status codes and raise exceptions for others.
+        Returns a tuple: (should_continue, should_return_none, new_consecutive_failures)
+        """
+        if response.status_code == 429:
+            logger.warning(f"Rate limit on {model}, rotating...")
+            self._mark_failed(model)
+            return True, False, consecutive_failures + 1
+
+        if response.status_code == 401:
+            logger.error(f"401 Unauthorized on {model} - check API key!")
+            consecutive_failures += 1
+            if consecutive_failures >= max_consecutive_failures:
+                logger.error("Multiple consecutive 401 errors - invalid API key!")
+                return False, True, consecutive_failures
+            return True, False, consecutive_failures
+
+        response.raise_for_status()
+        return False, False, consecutive_failures
+
+    def _parse_response(self, response):
+        """Parse JSON response from the API, handling markdown code blocks if present."""
+        result = response.json()
+        content = result['choices'][0]['message']['content'].strip()
+
+        # Extract JSON from markdown if needed
+        if content.startswith('```'):
+            content = content.split('```')[1]
+            if content.startswith('json'):
+                content = content[4:]
+            content = content.strip()
+
+        # Parse JSON
+        return json.loads(content)
+
     def call(self, system_prompt, user_prompt, temperature=0.3, max_retries=3):
         """
         Call AI with automatic model rotation
@@ -65,74 +120,25 @@ class AIManager:
             try:
                 logger.debug(f"AI call with model: {model} (attempt {attempt + 1}/{max_total_attempts})")
                 
-                response = requests.post(
-                    self.base_url,
-                    headers={
-                        'Authorization': f'Bearer {self.api_key}',
-                        'Content-Type': 'application/json',
-                    },
-                    json={
-                        'model': model,
-                        'messages': [
-                            {'role': 'system', 'content': system_prompt},
-                            {'role': 'user', 'content': user_prompt}
-                        ],
-                        'temperature': temperature
-                    },
-                    timeout=30
+                response = self._make_request(model, system_prompt, user_prompt, temperature)
+                
+                # Handle status codes and errors
+                should_continue, should_return_none, consecutive_failures = self._handle_response_errors(
+                    response, model, consecutive_failures, max_consecutive_failures
                 )
-                
-                # Check for rate limit
-                if response.status_code == 429:
-                    logger.warning(f"Rate limit on {model}, rotating...")
-                    self._mark_failed(model)
-                    consecutive_failures += 1
+                if should_return_none:
+                    return None
+                if should_continue:
                     continue
                 
-                # Check for auth errors - don't retry if all models failing
-                if response.status_code == 401:
-                    logger.error(f"401 Unauthorized on {model} - check API key!")
-                    consecutive_failures += 1
-                    # If we get 5 consecutive 401s, API key is definitely bad
-                    if consecutive_failures >= max_consecutive_failures:
-                        logger.error("Multiple consecutive 401 errors - invalid API key!")
-                        return None
-                    continue
-                
-                response.raise_for_status()
-                
-                # Parse response
-                result = response.json()
-                content = result['choices'][0]['message']['content'].strip()
-                
-                # Extract JSON from markdown if needed
-                if content.startswith('```'):
-                    content = content.split('```')[1]
-                    if content.startswith('json'):
-                        content = content[4:]
-                    content = content.strip()
-                
-                # Parse JSON
-                data = json.loads(content)
-                
+                data = self._parse_response(response)
                 logger.debug(f"AI call successful with {model}")
                 return data
                 
             except requests.exceptions.HTTPError as e:
-                if e.response.status_code == 429:
-                    logger.warning(f"Rate limit on {model}")
-                    self._mark_failed(model)
-                    consecutive_failures += 1
-                elif e.response.status_code == 401:
-                    logger.error(f"401 Unauthorized on {model}")
-                    consecutive_failures += 1
-                    if consecutive_failures >= max_consecutive_failures:
-                        logger.error("API key invalid - stopping retries!")
-                        return None
-                else:
-                    logger.error(f"HTTP error on {model}: {e}")
-                    self._mark_failed(model)
-                    consecutive_failures += 1
+                logger.error(f"HTTP error on {model}: {e}")
+                self._mark_failed(model)
+                consecutive_failures += 1
                 continue
                 
             except json.JSONDecodeError as e:
