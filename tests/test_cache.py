@@ -1,16 +1,18 @@
 import unittest
 import json
-from unittest.mock import patch, mock_open, MagicMock
-from pathlib import Path
-from modules.cache import ProgressCache
+from unittest.mock import patch, mock_open
 import tempfile
 import os
+
+from modules.cache import ProgressCache
+
 
 class TestProgressCache(unittest.TestCase):
     def setUp(self):
         # Create a temporary directory and file for safe testing
         self.temp_dir = tempfile.TemporaryDirectory()
-        self.cache_file = os.path.join(self.temp_dir.name, 'test_progress.json')
+        self.cache_file = os.path.join(
+            self.temp_dir.name, 'test_progress.json')
         self.cache = ProgressCache(cache_file=self.cache_file)
 
     def tearDown(self):
@@ -54,7 +56,8 @@ class TestProgressCache(unittest.TestCase):
         with patch('builtins.open', mock_open_func):
             self.cache.save(test_data)
 
-        # Verify logger.error was called with a message containing the exception
+        # Verify logger.error was called with a message containing the
+        # exception
         mock_logger.error.assert_called_once()
         error_msg = mock_logger.error.call_args[0][0]
         self.assertIn("Failed to save cache", error_msg)
@@ -174,6 +177,7 @@ class TestProgressCache(unittest.TestCase):
 
         loaded = self.cache.load()
         self.assertEqual(loaded["completed_rows"], [1, 5])
+
 
 if __name__ == '__main__':
     unittest.main()
