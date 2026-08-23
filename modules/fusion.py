@@ -8,6 +8,14 @@ from modules.utils import logger
 
 
 # ============================================================
+# CONSTANTS
+# ============================================================
+
+FUSION_FIELDS = ('business_name', 'street_address', 'city', 'state', 'zip_code', 'website', 'facebook', 'instagram', 'business_hours')
+VERIFIED_SINGLE_FIELDS = ('business_name', 'street_address', 'city', 'state', 'zip_code', 'website')
+IMPORTANT_COMPLETENESS_FIELDS = ('business_name', 'phone_numbers', 'email_addresses', 'street_address', 'website')
+
+# ============================================================
 # MAIN FUSION FUNCTION
 # ============================================================
 
@@ -72,7 +80,7 @@ def merge_multi_source_data(sources_data):
             merged['source_urls']['website'] = source_data['website']
         
         # Collect field data
-        for field in ['business_name', 'street_address', 'city', 'state', 'zip_code', 'website', 'facebook', 'instagram', 'business_hours']:
+        for field in FUSION_FIELDS:
             value = source_data.get(field)
             if value:
                 field_sources[field].append((value, source_type))
@@ -232,9 +240,8 @@ def calculate_confidence_score(merged_data, field_sources):
     
     # Score from data completeness (max 30 points)
     completeness_score = 0
-    important_fields = ['business_name', 'phone_numbers', 'email_addresses', 'street_address', 'website']
     
-    for field in important_fields:
+    for field in IMPORTANT_COMPLETENESS_FIELDS:
         value = merged_data.get(field)
         if value:
             if isinstance(value, list):
@@ -262,7 +269,7 @@ def _get_verified_fields(field_sources):
     verified = []
     
     # Check single fields
-    for field in ['business_name', 'street_address', 'city', 'state', 'zip_code', 'website']:
+    for field in VERIFIED_SINGLE_FIELDS:
         if len(field_sources.get(field, [])) >= 2:
             verified.append(field)
     

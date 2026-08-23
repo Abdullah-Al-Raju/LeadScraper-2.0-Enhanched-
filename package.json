@@ -1,0 +1,9 @@
+{
+  "name": "leadscraper",
+  "version": "1.0.0",
+  "description": "stub for cloudflare",
+  "main": "worker.js",
+  "scripts": {
+    "build": "echo 'no build step needed'"
+  }
+}
