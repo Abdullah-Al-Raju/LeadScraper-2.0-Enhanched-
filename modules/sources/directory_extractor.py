@@ -12,6 +12,46 @@ import config
 
 
 # ============================================================
+# REGEX COMPILATIONS (Performance Optimization)
+# ============================================================
+
+# Yelp
+RE_YELP_NAME = re.compile('businessName|heading')
+RE_YELP_PHONE_CLASS = re.compile('phone')
+RE_YELP_PHONE_HREF = re.compile('tel:')
+RE_YELP_WEBSITE = re.compile('website')
+
+# YellowPages
+RE_YP_NAME = re.compile('business-name')
+RE_YP_PHONE = re.compile('phone|call')
+RE_YP_STREET = re.compile('street-address')
+RE_YP_CITY = re.compile('locality')
+RE_YP_STATE = re.compile('region')
+RE_YP_ZIP = re.compile('postal-code')
+
+# Foursquare
+RE_FS_NAME = re.compile('venueName')
+RE_FS_PHONE = re.compile('phone')
+RE_FS_ADDRESS = re.compile('address')
+
+# TripAdvisor
+RE_TA_PHONE_HREF = re.compile('tel:')
+RE_TA_PHONE_CLASS = re.compile('phone')
+RE_TA_ADDRESS = re.compile('address')
+
+# Generic
+RE_GENERIC_NAME = re.compile('business.*name|company.*name|title', re.I)
+RE_GENERIC_PHONE_HREF = re.compile('tel:')
+RE_GENERIC_PHONE_CLASS = re.compile('phone|contact.*number|tel', re.I)
+RE_GENERIC_EMAIL_HREF = re.compile('mailto:')
+RE_GENERIC_ADDRESS = re.compile('address|location', re.I)
+RE_GENERIC_WEBSITE = re.compile('website|url|link', re.I)
+
+# Fallback regexes
+RE_PHONE_PATTERN = re.compile(r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}')
+RE_EMAIL_PATTERN = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b')
+
+# ============================================================
 # DIRECTORY DETECTION
 # ============================================================
 
@@ -145,14 +185,14 @@ def extract_from_yelp(soup, url):
     
     try:
         # Business name
-        name_elem = soup.find('h1', class_=re.compile('businessName|heading'))
+        name_elem = soup.find('h1', class_=RE_YELP_NAME)
         if name_elem:
             data['business_name'] = name_elem.get_text(strip=True)
         
         # Phone number
-        phone_elem = soup.find('p', class_=re.compile('phone'))
+        phone_elem = soup.find('p', class_=RE_YELP_PHONE_CLASS)
         if not phone_elem:
-            phone_elem = soup.find('a', href=re.compile('tel:'))
+            phone_elem = soup.find('a', href=RE_YELP_PHONE_HREF)
         if phone_elem:
             phone_text = phone_elem.get_text(strip=True) if hasattr(phone_elem, 'get_text') else phone_elem.get('href', '').replace('tel:', '')
             formatted = format_phone(phone_text)
@@ -166,7 +206,7 @@ def extract_from_yelp(soup, url):
             data['street_address'] = addr_text.split(',')[0] if ',' in addr_text else addr_text
         
         # Website
-        website_elem = soup.find('a', class_=re.compile('website'))
+        website_elem = soup.find('a', class_=RE_YELP_WEBSITE)
         if website_elem:
             data['website'] = website_elem.get('href')
         
@@ -182,12 +222,12 @@ def extract_from_yellowpages(soup, url):
     
     try:
         # Business name
-        name_elem = soup.find('h1') or soup.find('h2', class_=re.compile('business-name'))
+        name_elem = soup.find('h1') or soup.find('h2', class_=RE_YP_NAME)
         if name_elem:
             data['business_name'] = name_elem.get_text(strip=True)
         
         # Phone
-        phone_link = soup.find('a', class_=re.compile('phone|call'))
+        phone_link = soup.find('a', class_=RE_YP_PHONE)
         if phone_link:
             phone_text = phone_link.get_text(strip=True)
             formatted = format_phone(phone_text)
@@ -195,10 +235,10 @@ def extract_from_yellowpages(soup, url):
                 data['phone_numbers'].append(formatted)
         
         # Address
-        street = soup.find(class_=re.compile('street-address'))
-        city = soup.find(class_=re.compile('locality'))
-        state = soup.find(class_=re.compile('region'))
-        zipcode = soup.find(class_=re.compile('postal-code'))
+        street = soup.find(class_=RE_YP_STREET)
+        city = soup.find(class_=RE_YP_CITY)
+        state = soup.find(class_=RE_YP_STATE)
+        zipcode = soup.find(class_=RE_YP_ZIP)
         
         if street:
             data['street_address'] = street.get_text(strip=True)
@@ -221,19 +261,19 @@ def extract_from_foursquare(soup, url):
     
     try:
         # Business name
-        name_elem = soup.find('h1', class_=re.compile('venueName'))
+        name_elem = soup.find('h1', class_=RE_FS_NAME)
         if name_elem:
             data['business_name'] = name_elem.get_text(strip=True)
         
         # Phone
-        phone_elem = soup.find('div', class_=re.compile('phone'))
+        phone_elem = soup.find('div', class_=RE_FS_PHONE)
         if phone_elem:
             formatted = format_phone(phone_elem.get_text(strip=True))
             if formatted:
                 data['phone_numbers'].append(formatted)
         
         # Address
-        address = soup.find('div', class_=re.compile('address'))
+        address = soup.find('div', class_=RE_FS_ADDRESS)
         if address:
             data['street_address'] = address.get_text(strip=True)
         
@@ -254,7 +294,7 @@ def extract_from_tripadvisor(soup, url):
             data['business_name'] = name_elem.get_text(strip=True)
         
         # Phone
-        phone_elem = soup.find('a', href=re.compile('tel:')) or soup.find('span', class_=re.compile('phone'))
+        phone_elem = soup.find('a', href=RE_TA_PHONE_HREF) or soup.find('span', class_=RE_TA_PHONE_CLASS)
         if phone_elem:
             phone_text = phone_elem.get('href', '').replace('tel:', '') if phone_elem.get('href') else phone_elem.get_text(strip=True)
             formatted = format_phone(phone_text)
@@ -262,7 +302,7 @@ def extract_from_tripadvisor(soup, url):
                 data['phone_numbers'].append(formatted)
         
         # Address
-        address_elem = soup.find('span', class_=re.compile('address'))
+        address_elem = soup.find('span', class_=RE_TA_ADDRESS)
         if address_elem:
             data['street_address'] = address_elem.get_text(strip=True)
         
@@ -287,7 +327,7 @@ def extract_generic_directory(soup, url):
         name_selectors = [
             soup.find('h1'),
             soup.find('h2'),
-            soup.find(class_=re.compile('business.*name|company.*name|title', re.I)),
+            soup.find(class_=RE_GENERIC_NAME),
             soup.find(attrs={'itemprop': 'name'})
         ]
         for elem in name_selectors:
@@ -299,8 +339,8 @@ def extract_generic_directory(soup, url):
         
         # Phone - try common patterns
         phone_patterns = [
-            soup.find('a', href=re.compile('tel:')),
-            soup.find(class_=re.compile('phone|contact.*number|tel', re.I)),
+            soup.find('a', href=RE_GENERIC_PHONE_HREF),
+            soup.find(class_=RE_GENERIC_PHONE_CLASS),
             soup.find(attrs={'itemprop': 'telephone'})
         ]
         for elem in phone_patterns:
@@ -311,7 +351,7 @@ def extract_generic_directory(soup, url):
                     data['phone_numbers'].append(formatted)
         
         # Email - search in links and text
-        email_link = soup.find('a', href=re.compile('mailto:'))
+        email_link = soup.find('a', href=RE_GENERIC_EMAIL_HREF)
         if email_link:
             email = email_link.get('href', '').replace('mailto:', '')
             if is_valid_email(email):
@@ -319,23 +359,21 @@ def extract_generic_directory(soup, url):
         
         # Regex fallback for phone/email in text
         if not data['phone_numbers']:
-            phone_regex = r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}'
-            phones = re.findall(phone_regex, page_text)
+            phones = RE_PHONE_PATTERN.findall(page_text)
             for phone in phones[:3]:  # Max 3
                 formatted = format_phone(phone)
                 if formatted and formatted not in data['phone_numbers']:
                     data['phone_numbers'].append(formatted)
         
         if not data['email_addresses']:
-            email_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
-            emails = re.findall(email_regex, page_text)
+            emails = RE_EMAIL_PATTERN.findall(page_text)
             for email in emails[:2]:  # Max 2
                 if is_valid_email(email) and email not in data['email_addresses']:
                     data['email_addresses'].append(email)
         
         # Address - try common patterns
         address_selectors = [
-            soup.find(class_=re.compile('address|location', re.I)),
+            soup.find(class_=RE_GENERIC_ADDRESS),
             soup.find(attrs={'itemprop': 'address'})
         ]
         for elem in address_selectors:
@@ -346,7 +384,7 @@ def extract_generic_directory(soup, url):
                     break
         
         # Website link
-        website_link = soup.find('a', class_=re.compile('website|url|link', re.I))
+        website_link = soup.find('a', class_=RE_GENERIC_WEBSITE)
         if website_link:
             href = website_link.get('href', '')
             if href and not href.startswith('#') and 'http' in href:
