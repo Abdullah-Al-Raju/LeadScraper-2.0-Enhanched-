@@ -105,7 +105,7 @@ def get_unprocessed_rows(sheet):
         raise
     except Exception as e:
         logger.error(f"Error reading input rows: {e}")
-        raise
+        return []
 
 
 # ============================================================
