@@ -34,7 +34,7 @@ class ProgressCache:
             
             logger.debug(f"Progress saved: {data}")
         except Exception as e:
-            logger.error(f"Failed to save progress: {e}")
+            logger.error(f"Failed to save cache: {e}")
     
     def load(self):
         """
