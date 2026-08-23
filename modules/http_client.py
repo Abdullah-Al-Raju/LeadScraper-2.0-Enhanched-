@@ -4,7 +4,6 @@ Replaces synchronous requests with async httpx for concurrent processing
 """
 
 import httpx
-import asyncio
 import logging
 from typing import Optional, Dict, Any
 
