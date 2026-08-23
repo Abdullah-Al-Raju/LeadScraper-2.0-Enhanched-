@@ -2,7 +2,6 @@
 DuckDuckGo Search Module (ASYNC VERSION)
 Search for business websites and filter aggregators
 """
-from ddgs import DDGS
 import time
 import asyncio
 import config
@@ -76,11 +75,13 @@ async def _search_with_query(business_name, city="", include_contact=True):
     
     try:
         # DDGS is sync, so run in executor
+        def _do_search():
+            from duckduckgo_search import DDGS
+            with DDGS() as ddgs:
+                return list(ddgs.text(query, max_results=config.MAX_SEARCH_RESULTS))
+
         loop = asyncio.get_event_loop()
-        results = await loop.run_in_executor(
-            None,
-            lambda: list(DDGS().text(query, max_results=config.MAX_SEARCH_RESULTS))
-        )
+        results = await loop.run_in_executor(None, _do_search)
         
         if not results:
             logger.warning(f"No search results for: {query}")
@@ -122,7 +123,7 @@ def validate_search_setup():
     """
     try:
         # Test ddg search
-        from ddgs import DDGS  # FIXED: was duckduckgo_search
+        from duckduckgo_search import DDGS
         logger.info("DuckDuckGo search module validated")
         return True
     except ImportError:
@@ -147,8 +148,9 @@ def search_duckduckgo(query, max_results=10):
         List of search result dictionaries
     """
     try:
-        from ddgs import DDGS  # FIXED: was duckduckgo_search
-        results = list(DDGS().text(query, max_results=max_results))
+        from duckduckgo_search import DDGS
+        with DDGS() as ddgs:
+            results = list(ddgs.text(query, max_results=max_results))
         return results
     except Exception as e:
         logger.error(f"Search error: {e}")
