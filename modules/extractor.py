@@ -17,20 +17,10 @@ from modules.utils import (
 # MAIN EXTRACTION FUNCTION
 # ============================================================
 
-def extract_contacts(crawl_data, category=None):
+def _run_extraction_tiers(crawl_data, category=None):
     """
-    Extract contact information using multi-tier approach
-    
-    Args:
-        crawl_data: Dictionary from crawler module
-        category: Business category/type for context-aware extraction
-        
-    Returns:
-        Dictionary with extracted contact information
+    Run extraction tiers (Structured Data, AI, Regex)
     """
-    if not crawl_data:
-        return None
-    
     # Try Tier 1: Structured data (JSON-LD)
     contacts = extract_from_structured_data(crawl_data.get('structured_data', []))
     
@@ -52,7 +42,14 @@ def extract_contacts(crawl_data, category=None):
             crawl_data.get('tel_links', [])
         )
         contacts = _merge_contacts(contacts, regex_contacts)
-    
+
+    return contacts
+
+
+def _enrich_with_social_and_website(contacts, crawl_data):
+    """
+    Enrich contacts with social links and website URL
+    """
     # Add social links
     social = crawl_data.get('social_links', {})
     if not contacts.get('facebook'):
@@ -67,6 +64,26 @@ def extract_contacts(crawl_data, category=None):
     # Add website
     if not contacts.get('website'):
         contacts['website'] = crawl_data.get('homepage_url')
+
+    return contacts
+
+
+def extract_contacts(crawl_data, category=None):
+    """
+    Extract contact information using multi-tier approach
+
+    Args:
+        crawl_data: Dictionary from crawler module
+        category: Business category/type for context-aware extraction
+
+    Returns:
+        Dictionary with extracted contact information
+    """
+    if not crawl_data:
+        return None
+
+    contacts = _run_extraction_tiers(crawl_data, category)
+    contacts = _enrich_with_social_and_website(contacts, crawl_data)
     
     return contacts
 
@@ -263,41 +280,11 @@ First, understand what this business is. Then, intelligently extract ALL contact
         result = response.json()
         content = result['choices'][0]['message']['content']
         
-        # Extract JSON from response
-        content = content.strip()
-        if content.startswith('```'):
-            content = content.split('```')[1]
-            if content.startswith('json'):
-                content = content[4:]
-        
-        # Parse JSON
-        ai_result = json.loads(content)
+        formatted, ai_result = _parse_ai_response_to_contacts(content)
         
         # Log AI's understanding
         understanding = ai_result.get('business_understanding', {})
         logger.info(f"🤖 AI Understanding: {understanding.get('type')} - {understanding.get('description')} (Confidence: {understanding.get('confidence')})")
-        
-        # Get extracted data
-        contacts = ai_result.get('extracted_data', {})
-        
-        # Convert to our format
-        formatted = _empty_contacts()
-        formatted['business_name'] = contacts.get('business_name')
-        formatted['phone_numbers'] = [format_phone(p) for p in contacts.get('phone_numbers', []) if p]
-        formatted['email_addresses'] = [e for e in contacts.get('email_addresses', []) if is_valid_email(e)]
-        formatted['street_address'] = contacts.get('street_address')
-        formatted['city'] = contacts.get('city')
-        formatted['state'] = contacts.get('state')
-        formatted['zip_code'] = contacts.get('zip_code')
-        formatted['website'] = contacts.get('website')
-        formatted['facebook'] = contacts.get('facebook')
-        formatted['instagram'] = contacts.get('instagram')
-        formatted['twitter'] = contacts.get('twitter')
-        formatted['linkedin'] = contacts.get('linkedin')
-        formatted['whatsapp'] = contacts.get('whatsapp')
-        formatted['business_hours'] = contacts.get('business_hours')
-        formatted['owner_name'] = contacts.get('owner_name')
-        formatted['delivery_platforms'] = contacts.get('delivery_platforms')
         
         logger.info(f"🤖 AI extracted: {len(formatted['phone_numbers'])} phones, {len(formatted['email_addresses'])} emails")
         
@@ -439,6 +426,48 @@ def _empty_contacts():
         'business_hours': None,
         'owner_name': None
     }
+
+def _parse_ai_response_to_contacts(ai_response_text):
+    """
+    Extracts and parses JSON from the AI response and returns it in standard contacts format.
+    """
+    content = ai_response_text.strip()
+    if content.startswith('```'):
+        content = content.split('```')[1]
+        if content.startswith('json'):
+            content = content[4:]
+
+    contacts_json = json.loads(content)
+
+    # Standard format conversion
+    formatted = _empty_contacts()
+
+    # If the AI used the two-step structure 'extracted_data', use that
+    contacts = contacts_json.get('extracted_data', contacts_json)
+
+    formatted['business_name'] = contacts.get('business_name')
+    formatted['phone_numbers'] = [format_phone(p) for p in contacts.get('phone_numbers', []) if p]
+    formatted['email_addresses'] = [e for e in contacts.get('email_addresses', []) if is_valid_email(e)]
+    formatted['street_address'] = contacts.get('street_address')
+    formatted['city'] = contacts.get('city')
+    formatted['state'] = contacts.get('state')
+    formatted['zip_code'] = contacts.get('zip_code')
+    formatted['website'] = contacts.get('website')
+    formatted['facebook'] = contacts.get('facebook')
+    formatted['instagram'] = contacts.get('instagram')
+    formatted['twitter'] = contacts.get('twitter')
+    formatted['linkedin'] = contacts.get('linkedin')
+    formatted['business_hours'] = contacts.get('business_hours')
+    formatted['owner_name'] = contacts.get('owner_name')
+
+    # Special fields from extract_with_ai (not strictly in _empty_contacts but sometimes passed through if needed, though they aren't by default there)
+    # We will just capture the defaults
+    if 'whatsapp' in contacts:
+        formatted['whatsapp'] = contacts.get('whatsapp')
+    if 'delivery_platforms' in contacts:
+        formatted['delivery_platforms'] = contacts.get('delivery_platforms')
+
+    return formatted, contacts_json
 
 
 def _merge_contacts(contacts1, contacts2):
@@ -651,33 +680,7 @@ CRITICAL RULES:
         result = response.json()
         content = result['choices'][0]['message']['content']
         
-        # Extract JSON from response (handle markdown code blocks)
-        content = content.strip()
-        if content.startswith('```'):
-            # Remove markdown code block
-            content = content.split('```')[1]
-            if content.startswith('json'):
-                content = content[4:]
-        
-        # Parse JSON
-        contacts = json.loads(content)
-        
-        # Convert to our format
-        formatted = _empty_contacts()
-        formatted['business_name'] = contacts.get('business_name')
-        formatted['phone_numbers'] = [format_phone(p) for p in contacts.get('phone_numbers', []) if p]
-        formatted['email_addresses'] = [e for e in contacts.get('email_addresses', []) if is_valid_email(e)]
-        formatted['street_address'] = contacts.get('street_address')
-        formatted['city'] = contacts.get('city')
-        formatted['state'] = contacts.get('state')
-        formatted['zip_code'] = contacts.get('zip_code')
-        formatted['website'] = contacts.get('website')
-        formatted['facebook'] = contacts.get('facebook')
-        formatted['instagram'] = contacts.get('instagram')
-        formatted['twitter'] = contacts.get('twitter')
-        formatted['linkedin'] = contacts.get('linkedin')
-        formatted['business_hours'] = contacts.get('business_hours')
-        formatted['owner_name'] = contacts.get('owner_name')
+        formatted, _ = _parse_ai_response_to_contacts(content)
         
         logger.info(f"Category-aware AI extraction successful: {len(formatted['phone_numbers'])} phones, {len(formatted['email_addresses'])} emails")
         
