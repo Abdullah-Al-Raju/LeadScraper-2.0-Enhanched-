@@ -4,9 +4,9 @@ Searches and extracts contact information from Facebook Business Pages
 """
 
 import re
-import requests
+import httpx
 from bs4 import BeautifulSoup
-from modules.utils import logger, retry_on_failure, is_valid_email, format_phone
+from modules.utils import logger, retry_on_failure, retry_async_on_failure, is_valid_email, format_phone
 import config
 
 
@@ -95,8 +95,8 @@ def _clean_facebook_url(url):
 # FACEBOOK DATA EXTRACTION
 # ============================================================
 
-@retry_on_failure(max_retries=2)
-def extract_facebook_data(page_url):
+@retry_async_on_failure(max_retries=2)
+async def extract_facebook_data(page_url):
     """
     Extract business information from Facebook page
     
@@ -119,8 +119,9 @@ def extract_facebook_data(page_url):
             'Accept-Language': 'en-US,en;q=0.5',
         }
         
-        response = requests.get(page_url, headers=headers, timeout=15)
-        response.raise_for_status()
+        async with httpx.AsyncClient(timeout=15) as client:
+            response = await client.get(page_url, headers=headers)
+            response.raise_for_status()
         
         html = response.text
         soup = BeautifulSoup(html, 'html.parser')
