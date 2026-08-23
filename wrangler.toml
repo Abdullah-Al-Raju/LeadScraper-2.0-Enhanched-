@@ -1,0 +1,6 @@
+name = "leadscraper"
+compatibility_date = "2024-01-01"
+main = "worker.js"
+
+[build]
+command = "echo 'No build required'"
