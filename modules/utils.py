@@ -344,30 +344,19 @@ def is_valid_email(email):
 
 def format_phone(phone):
     """
-    Format phone number to (XXX) XXX-XXXX format
+    Format phone number by stripping all non-digit and non-plus characters.
     
     Args:
-        phone: Raw phone number string
+        phone: Raw phone number input (string, int, etc.)
         
     Returns:
-        Formatted phone number
+        Cleaned phone number string containing only digits and plus signs.
     """
     if not phone:
-        return ""
+        return ''
     
-    # Remove all non-digits
     import re
-    digits = re.sub(r'\D', '', phone)
-    
-    # Handle US phone numbers (10 digits)
-    if len(digits) == 10:
-        return f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"
-    
-    # Handle with country code (11 digits, starting with 1)
-    if len(digits) == 11 and digits[0] == '1':
-        return f"({digits[1:4]}) {digits[4:7]}-{digits[7:]}"
-    
-    # Return as-is if not standard format
+    phone = re.sub(r'[^0-9+]', '', str(phone))
     return phone
 
 
