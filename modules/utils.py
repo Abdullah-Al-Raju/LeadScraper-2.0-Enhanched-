@@ -94,29 +94,54 @@ def retry_on_failure(max_retries=None, backoff=None, exceptions=(Exception,)):
         backoff: Base backoff time in seconds (default from config)
         exceptions: Tuple of exceptions to catch and retry
     """
+    import asyncio
     def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            retries = max_retries or config.MAX_RETRIES
-            backoff_time = backoff or config.RETRY_BACKOFF
-            
-            for attempt in range(retries + 1):
-                try:
-                    return func(*args, **kwargs)
-                except exceptions as e:
-                    if attempt == retries:
-                        logger.error(f"{func.__name__} failed after {retries} retries: {e}")
-                        raise
-                    
-                    # Calculate exponential backoff
-                    wait_time = backoff_time * (2 ** attempt)
-                    logger.warning(
-                        f"{func.__name__} failed (attempt {attempt + 1}/{retries + 1}): {e}. "
-                        f"Retrying in {wait_time}s..."
-                    )
-                    time.sleep(wait_time)
-            
-        return wrapper
+        if asyncio.iscoroutinefunction(func):
+            @functools.wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                retries = max_retries or config.MAX_RETRIES
+                backoff_time = backoff or config.RETRY_BACKOFF
+
+                for attempt in range(retries + 1):
+                    try:
+                        return await func(*args, **kwargs)
+                    except exceptions as e:
+                        if attempt == retries:
+                            logger.error(f"{func.__name__} failed after {retries} retries: {e}")
+                            raise
+
+                        # Calculate exponential backoff
+                        wait_time = backoff_time * (2 ** attempt)
+                        logger.warning(
+                            f"{func.__name__} failed (attempt {attempt + 1}/{retries + 1}): {e}. "
+                            f"Retrying in {wait_time}s..."
+                        )
+                        await asyncio.sleep(wait_time)
+
+            return async_wrapper
+        else:
+            @functools.wraps(func)
+            def sync_wrapper(*args, **kwargs):
+                retries = max_retries or config.MAX_RETRIES
+                backoff_time = backoff or config.RETRY_BACKOFF
+
+                for attempt in range(retries + 1):
+                    try:
+                        return func(*args, **kwargs)
+                    except exceptions as e:
+                        if attempt == retries:
+                            logger.error(f"{func.__name__} failed after {retries} retries: {e}")
+                            raise
+
+                        # Calculate exponential backoff
+                        wait_time = backoff_time * (2 ** attempt)
+                        logger.warning(
+                            f"{func.__name__} failed (attempt {attempt + 1}/{retries + 1}): {e}. "
+                            f"Retrying in {wait_time}s..."
+                        )
+                        time.sleep(wait_time)
+
+            return sync_wrapper
     return decorator
 
 

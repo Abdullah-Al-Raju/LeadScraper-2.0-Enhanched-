@@ -62,9 +62,17 @@ async def process_business_async(sheet, row, progress, stats, cache, semaphore):
             # Create concurrent extraction tasks
             extraction_tasks = []
             
-            # Task 1: Crawl website
-            from modules.crawler import crawl_website
-            extraction_tasks.append(crawl_website(website_url))
+            # Check if website is actually a directory
+            from modules.sources.directory_extractor import is_extractable_directory, extract_from_directory
+
+            is_dir, dir_type = is_extractable_directory(website_url)
+            if is_dir:
+                logger.info(f"Found {dir_type} directory - extracting concurrently...")
+                extraction_tasks.append(extract_from_directory(website_url, dir_type))
+            else:
+                # Task 1: Crawl website
+                from modules.crawler import crawl_website
+                extraction_tasks.append(crawl_website(website_url))
             
             # Task 2: Search results extraction (run in executor - it's sync)
             async def extract_search_results():
