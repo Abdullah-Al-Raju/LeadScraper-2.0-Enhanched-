@@ -5,7 +5,6 @@ Works on ANY platform (Windows, Mac, Linux)
 """
 
 import subprocess
-import os
 import sys
 import threading
 from datetime import datetime
