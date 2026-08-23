@@ -4,6 +4,7 @@ Rate limiting, retry logic, logging, text cleaning, robots.txt checking
 """
 
 import time
+import asyncio
 import random
 import logging
 import functools
@@ -123,6 +124,36 @@ def retry_on_failure(max_retries=None, backoff=None, exceptions=(Exception,)):
 # ============================================================
 # TEXT CLEANING
 # ============================================================
+
+
+def retry_async_on_failure(max_retries=None, backoff=None, exceptions=(Exception,)):
+    """
+    Async retry decorator with exponential backoff
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            retries = max_retries or config.MAX_RETRIES
+            backoff_time = backoff or config.RETRY_BACKOFF
+
+            for attempt in range(retries + 1):
+                try:
+                    return await func(*args, **kwargs)
+                except exceptions as e:
+                    if attempt == retries:
+                        logger.error(f"{func.__name__} failed after {retries} retries: {e}")
+                        raise
+
+                    wait_time = backoff_time * (2 ** attempt)
+                    logger.warning(
+                        f"{func.__name__} failed (attempt {attempt + 1}/{retries + 1}): {e}. "
+                        f"Retrying in {wait_time}s..."
+                    )
+                    await asyncio.sleep(wait_time)
+
+        return wrapper
+    return decorator
+
 
 def clean_text(text):
     """
