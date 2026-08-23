@@ -31,7 +31,7 @@ OPENROUTER_MODELS = [
     "stepfun/step-3.5-flash:free",
     "deepseek/deepseek-r1-0528:free",
     "openrouter/aurora-alpha",
-    
+
     # NEW: 11 additional free models for massive capacity!
     "liquid/lfm-2.5-1.2b-thinking:free",
     "liquid/lfm-2.5-1.2b-instruct:free",
@@ -151,7 +151,7 @@ AGGREGATOR_DOMAINS = [
 
 # Keywords in URL that indicate contact page
 CONTACT_URL_KEYWORDS = [
-    "contact", "about", "reach", "touch", "location", 
+    "contact", "about", "reach", "touch", "location",
     "find-us", "get-in-touch", "connect", "our-team"
 ]
 
