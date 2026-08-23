@@ -8,6 +8,8 @@ import random
 import logging
 import functools
 import hashlib
+import asyncio
+import inspect
 from urllib.parse import urlparse
 from urllib.robotparser import RobotFileParser
 import config
@@ -55,29 +57,52 @@ def rate_limit(min_delay=None, jitter=None):
     def decorator(func):
         last_call = [0]  # Use list to make it mutable in closure
         
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            delay = min_delay or config.DELAY_BETWEEN_LEADS
-            jitter_val = jitter or config.DELAY_JITTER
-            
-            # Calculate time since last call
-            elapsed = time.time() - last_call[0]
-            
-            # Add delay if needed
-            if elapsed < delay:
-                sleep_time = delay - elapsed + random.uniform(0, jitter_val)
-                logger.debug(f"Rate limiting: sleeping for {sleep_time:.2f}s")
-                time.sleep(sleep_time)
-            
-            # Execute function
-            result = func(*args, **kwargs)
-            
-            # Update last call time
-            last_call[0] = time.time()
-            
-            return result
-        
-        return wrapper
+        if inspect.iscoroutinefunction(func):
+            @functools.wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                delay = min_delay or config.DELAY_BETWEEN_LEADS
+                jitter_val = jitter or config.DELAY_JITTER
+
+                # Calculate time since last call
+                elapsed = time.time() - last_call[0]
+
+                # Add delay if needed
+                if elapsed < delay:
+                    sleep_time = delay - elapsed + random.uniform(0, jitter_val)
+                    logger.debug(f"Rate limiting: sleeping for {sleep_time:.2f}s")
+                    await asyncio.sleep(sleep_time)
+
+                # Execute function
+                result = await func(*args, **kwargs)
+
+                # Update last call time
+                last_call[0] = time.time()
+
+                return result
+            return async_wrapper
+        else:
+            @functools.wraps(func)
+            def sync_wrapper(*args, **kwargs):
+                delay = min_delay or config.DELAY_BETWEEN_LEADS
+                jitter_val = jitter or config.DELAY_JITTER
+
+                # Calculate time since last call
+                elapsed = time.time() - last_call[0]
+
+                # Add delay if needed
+                if elapsed < delay:
+                    sleep_time = delay - elapsed + random.uniform(0, jitter_val)
+                    logger.debug(f"Rate limiting: sleeping for {sleep_time:.2f}s")
+                    time.sleep(sleep_time)
+
+                # Execute function
+                result = func(*args, **kwargs)
+
+                # Update last call time
+                last_call[0] = time.time()
+
+                return result
+            return sync_wrapper
     return decorator
 
 
@@ -95,28 +120,50 @@ def retry_on_failure(max_retries=None, backoff=None, exceptions=(Exception,)):
         exceptions: Tuple of exceptions to catch and retry
     """
     def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            retries = max_retries or config.MAX_RETRIES
-            backoff_time = backoff or config.RETRY_BACKOFF
-            
-            for attempt in range(retries + 1):
-                try:
-                    return func(*args, **kwargs)
-                except exceptions as e:
-                    if attempt == retries:
-                        logger.error(f"{func.__name__} failed after {retries} retries: {e}")
-                        raise
-                    
-                    # Calculate exponential backoff
-                    wait_time = backoff_time * (2 ** attempt)
-                    logger.warning(
-                        f"{func.__name__} failed (attempt {attempt + 1}/{retries + 1}): {e}. "
-                        f"Retrying in {wait_time}s..."
-                    )
-                    time.sleep(wait_time)
-            
-        return wrapper
+        if inspect.iscoroutinefunction(func):
+            @functools.wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                retries = max_retries or config.MAX_RETRIES
+                backoff_time = backoff or config.RETRY_BACKOFF
+
+                for attempt in range(retries + 1):
+                    try:
+                        return await func(*args, **kwargs)
+                    except exceptions as e:
+                        if attempt == retries:
+                            logger.error(f"{func.__name__} failed after {retries} retries: {e}")
+                            raise
+
+                        # Calculate exponential backoff
+                        wait_time = backoff_time * (2 ** attempt)
+                        logger.warning(
+                            f"{func.__name__} failed (attempt {attempt + 1}/{retries + 1}): {e}. "
+                            f"Retrying in {wait_time}s..."
+                        )
+                        await asyncio.sleep(wait_time)
+            return async_wrapper
+        else:
+            @functools.wraps(func)
+            def sync_wrapper(*args, **kwargs):
+                retries = max_retries or config.MAX_RETRIES
+                backoff_time = backoff or config.RETRY_BACKOFF
+
+                for attempt in range(retries + 1):
+                    try:
+                        return func(*args, **kwargs)
+                    except exceptions as e:
+                        if attempt == retries:
+                            logger.error(f"{func.__name__} failed after {retries} retries: {e}")
+                            raise
+
+                        # Calculate exponential backoff
+                        wait_time = backoff_time * (2 ** attempt)
+                        logger.warning(
+                            f"{func.__name__} failed (attempt {attempt + 1}/{retries + 1}): {e}. "
+                            f"Retrying in {wait_time}s..."
+                        )
+                        time.sleep(wait_time)
+            return sync_wrapper
     return decorator
 
 
