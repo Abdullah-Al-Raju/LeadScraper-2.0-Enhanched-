@@ -299,6 +299,8 @@ def get_domain(url):
 # HASHING (for duplicate detection)
 # ============================================================
 
+import re
+
 def hash_business(name, city=""):
     """
     Create hash for business (for duplicate detection)
@@ -310,8 +312,9 @@ def hash_business(name, city=""):
     Returns:
         Hash string
     """
-    key = f"{name.lower().strip()}|{city.lower().strip()}"
-    return hashlib.md5(key.encode()).hexdigest()
+    name_clean = re.sub(r'[^a-z0-9]', '', str(name).lower())
+    city_clean = re.sub(r'[^a-z0-9]', '', str(city).lower())
+    return f"{name_clean}_{city_clean}"
 
 
 # ============================================================
