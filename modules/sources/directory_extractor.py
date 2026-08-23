@@ -4,11 +4,9 @@ Extracts business contact information FROM directory/aggregator sites
 """
 
 import re
-import json
 import requests
 from bs4 import BeautifulSoup
 from modules.utils import logger, retry_on_failure, is_valid_email, format_phone
-import config
 
 
 # ============================================================
@@ -55,9 +53,11 @@ def is_extractable_directory(url):
             return True, dir_type
     
     # Check for generic directory patterns
-    directory_keywords = ['directory', 'business-list', 'company-profile', 'local-business']
+    directory_keywords = [
+        'directory', 'business-list', 'company-profile', 'local-business'
+    ]
     if any(kw in url_lower for kw in directory_keywords):
-        logger.info(f"Detected generic directory pattern in URL")
+        logger.info("Detected generic directory pattern in URL")
         return True, 'generic'
     
     return False, None
@@ -106,19 +106,18 @@ def extract_from_directory(url, directory_type=None):
         soup = BeautifulSoup(html, 'html.parser')
         
         # Extract based on directory type
-        if directory_type == 'yelp':
-            data = extract_from_yelp(soup, url)
-        elif directory_type in ['yellowpages', 'yellowbook']:
-            data = extract_from_yellowpages(soup, url)
-        elif directory_type == 'foursquare':
-            data = extract_from_foursquare(soup, url)
-        elif directory_type == 'tripadvisor':
-            data = extract_from_tripadvisor(soup, url)
-        elif directory_type in ['generic_bd', 'generic']:
-            data = extract_generic_directory(soup, url)
-        else:
-            # Fallback to generic extraction
-            data = extract_generic_directory(soup, url)
+        extractors = {
+            'yelp': extract_from_yelp,
+            'yellowpages': extract_from_yellowpages,
+            'yellowbook': extract_from_yellowpages,
+            'foursquare': extract_from_foursquare,
+            'tripadvisor': extract_from_tripadvisor,
+            'generic_bd': extract_generic_directory,
+            'generic': extract_generic_directory
+        }
+
+        extractor_func = extractors.get(directory_type, extract_generic_directory)
+        data = extractor_func(soup)
         
         if data:
             # Add source information
@@ -139,7 +138,7 @@ def extract_from_directory(url, directory_type=None):
 # DIRECTORY-SPECIFIC EXTRACTORS
 # ============================================================
 
-def extract_from_yelp(soup, url):
+def extract_from_yelp(soup):
     """Extract from Yelp business page"""
     data = _empty_contacts()
     
@@ -176,7 +175,7 @@ def extract_from_yelp(soup, url):
     return data if (data['phone_numbers'] or data['business_name']) else None
 
 
-def extract_from_yellowpages(soup, url):
+def extract_from_yellowpages(soup):
     """Extract from Yellow Pages"""
     data = _empty_contacts()
     
@@ -215,7 +214,7 @@ def extract_from_yellowpages(soup, url):
     return data if (data['phone_numbers'] or data['business_name']) else None
 
 
-def extract_from_foursquare(soup, url):
+def extract_from_foursquare(soup):
     """Extract from Foursquare"""
     data = _empty_contacts()
     
@@ -243,7 +242,7 @@ def extract_from_foursquare(soup, url):
     return data if (data['phone_numbers'] or data['business_name']) else None
 
 
-def extract_from_tripadvisor(soup, url):
+def extract_from_tripadvisor(soup):
     """Extract from TripAdvisor"""
     data = _empty_contacts()
     
@@ -272,7 +271,7 @@ def extract_from_tripadvisor(soup, url):
     return data if (data['phone_numbers'] or data['business_name']) else None
 
 
-def extract_generic_directory(soup, url):
+def extract_generic_directory(soup):
     """
     Generic directory extraction using common patterns
     Works for most directory sites
