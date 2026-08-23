@@ -49,6 +49,43 @@ async def search_for_website(business_name, city=""):
     return url
 
 
+def _build_search_query(business_name, city="", include_contact=True):
+    """Constructs the search query string."""
+    query_parts = [f'"{business_name}"']
+
+    if city:
+        query_parts.append(f'"{city}"')
+
+    if include_contact:
+        query_parts.append('contact OR phone OR email')
+
+    return ' '.join(query_parts)
+
+
+def _extract_first_valid_url(results, business_name):
+    """Extracts and validates the first non-aggregator URL from search results."""
+    for result in results:
+        url = result.get('href') or result.get('link')
+
+        if not url:
+            continue
+
+        # Normalize URL
+        url = normalize_url(url)
+
+        # Skip aggregators
+        if is_aggregator(url):
+            logger.debug(f"Skipping aggregator: {url}")
+            continue
+
+        # Found valid URL!
+        logger.info(f"Found website: {url}")
+        return url
+
+    logger.warning(f"All results were aggregators or invalid for: {business_name}")
+    return None
+
+
 async def _search_with_query(business_name, city="", include_contact=True):
     """
     Perform search with constructed query (ASYNC)
@@ -61,17 +98,7 @@ async def _search_with_query(business_name, city="", include_contact=True):
     Returns:
         URL string or None
     """
-    # Construct search query
-    query_parts = [f'"{business_name}"']
-    
-    if city:
-        query_parts.append(f'"{city}"')
-    
-    if include_contact:
-        query_parts.append('contact OR phone OR email')
-    
-    query = ' '.join(query_parts)
-    
+    query = _build_search_query(business_name, city, include_contact)
     logger.info(f"Searching: {query}")
     
     try:
@@ -86,27 +113,7 @@ async def _search_with_query(business_name, city="", include_contact=True):
             logger.warning(f"No search results for: {query}")
             return None
         
-        # Filter and validate results
-        for result in results:
-            url = result.get('href') or result.get('link')
-            
-            if not url:
-                continue
-            
-            # Normalize URL
-            url = normalize_url(url)
-            
-            # Skip aggregators
-            if is_aggregator(url):
-                logger.debug(f"Skipping aggregator: {url}")
-                continue
-            
-            # Found valid URL!
-            logger.info(f"Found website: {url}")
-            return url
-        
-        logger.warning(f"All results were aggregators or invalid for: {business_name}")
-        return None
+        return _extract_first_valid_url(results, business_name)
         
     except Exception as e:
         logger.error(f"Search error for '{business_name}': {e}")
