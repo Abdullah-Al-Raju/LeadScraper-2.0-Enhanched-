@@ -1,12 +1,8 @@
 import unittest
-from unittest.mock import patch, MagicMock
-import os
-import sys
-
-# Add project root to sys.path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from unittest.mock import patch
 
 from modules.cache import ProgressCache
+
 
 class TestProgressCache(unittest.TestCase):
 
@@ -49,6 +45,7 @@ class TestProgressCache(unittest.TestCase):
         # Assert
         self.assertEqual(result, expected_rows)
         mock_load.assert_called_once()
+
 
 if __name__ == '__main__':
     unittest.main()
