@@ -249,7 +249,7 @@ def normalize_url(url):
         return ""
     
     # Add scheme if missing
-    if not url.startswith(('http://', 'https://', 'http', 'https')):
+    if not url.startswith(('http://', 'https://')):
         url = 'https://' + url
     
     # Remove trailing slash
