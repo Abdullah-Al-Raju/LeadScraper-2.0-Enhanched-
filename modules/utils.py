@@ -6,6 +6,8 @@ Rate limiting, retry logic, logging, text cleaning, robots.txt checking
 import time
 import random
 import logging
+import asyncio
+import inspect
 import functools
 import hashlib
 from urllib.parse import urlparse
@@ -55,29 +57,54 @@ def rate_limit(min_delay=None, jitter=None):
     def decorator(func):
         last_call = [0]  # Use list to make it mutable in closure
         
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            delay = min_delay or config.DELAY_BETWEEN_LEADS
-            jitter_val = jitter or config.DELAY_JITTER
+        if inspect.iscoroutinefunction(func):
+            @functools.wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                delay = min_delay or config.DELAY_BETWEEN_LEADS
+                jitter_val = jitter or config.DELAY_JITTER
+
+                # Calculate time since last call
+                elapsed = time.time() - last_call[0]
+
+                # Add delay if needed
+                if elapsed < delay:
+                    sleep_time = delay - elapsed + random.uniform(0, jitter_val)
+                    logger.debug(f"Rate limiting: async sleeping for {sleep_time:.2f}s")
+                    await asyncio.sleep(sleep_time)
+
+                # Execute function
+                result = await func(*args, **kwargs)
+
+                # Update last call time
+                last_call[0] = time.time()
+
+                return result
             
-            # Calculate time since last call
-            elapsed = time.time() - last_call[0]
+            return async_wrapper
+        else:
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                delay = min_delay or config.DELAY_BETWEEN_LEADS
+                jitter_val = jitter or config.DELAY_JITTER
+
+                # Calculate time since last call
+                elapsed = time.time() - last_call[0]
+
+                # Add delay if needed
+                if elapsed < delay:
+                    sleep_time = delay - elapsed + random.uniform(0, jitter_val)
+                    logger.debug(f"Rate limiting: sleeping for {sleep_time:.2f}s")
+                    time.sleep(sleep_time)
+
+                # Execute function
+                result = func(*args, **kwargs)
+
+                # Update last call time
+                last_call[0] = time.time()
+
+                return result
             
-            # Add delay if needed
-            if elapsed < delay:
-                sleep_time = delay - elapsed + random.uniform(0, jitter_val)
-                logger.debug(f"Rate limiting: sleeping for {sleep_time:.2f}s")
-                time.sleep(sleep_time)
-            
-            # Execute function
-            result = func(*args, **kwargs)
-            
-            # Update last call time
-            last_call[0] = time.time()
-            
-            return result
-        
-        return wrapper
+            return wrapper
     return decorator
 
 
