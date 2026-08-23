@@ -81,36 +81,6 @@ def create_progress_bar(description="Processing"):
     )
 
 
-def create_status_panel(phase, business, progress, model, elapsed, eta):
-    """
-    Create live status panel
-    
-    Args:
-        phase: Current phase
-        business: Current business name
-        progress: Progress string (e.g., "7/10 (70%)")
-        model: Current AI model
-        elapsed: Elapsed time
-        eta: Estimated time remaining
-        
-    Returns:
-        Panel object
-    """
-    content = f"""[bold]Phase:[/bold]     {phase}
-[bold]Business:[/bold]  {business}
-[bold]Progress:[/bold]  {progress}
-[bold]Model:[/bold]     {model}
-[bold]Elapsed:[/bold]   {elapsed}
-[bold]ETA:[/bold]       {eta}"""
-    
-    return Panel(
-        content,
-        title="Current Operation",
-        border_style="cyan",
-        box=box.ROUNDED
-    )
-
-
 def create_results_table(results):
     """
     Create results summary table
