@@ -492,34 +492,20 @@ def _is_sufficient(contacts):
 # CATEGORY-AWARE AI EXTRACTION
 # ============================================================
 
-def _get_category_context(category):
-    """
-    Get category-specific extraction context
-    
-    Args:
-        category: Business category/type
-        
-    Returns:
-        Additional context string for AI prompt
-    """
-    if not category:
-        return ""
-    
-    category_lower = category.lower()
-    
-    # Restaurant-specific context
-    if any(word in category_lower for word in ['restaurant', 'cafe', 'coffee', 'food', 'dining', 'eatery']):
-        return """
+CATEGORY_CONTEXT_MAPPING = [
+    (
+        ['restaurant', 'cafe', 'coffee', 'food', 'dining', 'eatery'],
+        """
 This is a RESTAURANT/FOOD SERVICE business. Pay special attention to:
 - Business hours (especially lunch/dinner times)
 - Cuisine type or specialties
 - Reservation or delivery contact numbers
 - Owner/chef name if mentioned
 """
-    
-    # Medical/Dental context
-    elif any(word in category_lower for word in ['dental', 'dentist', 'clinic', 'medical', 'doctor', 'hospital', 'health']):
-        return """
+    ),
+    (
+        ['dental', 'dentist', 'clinic', 'medical', 'doctor', 'hospital', 'health'],
+        """
 This is a MEDICAL/DENTAL business. Pay special attention to:
 - Doctor/dentist names
 - Specialties or services offered
@@ -527,40 +513,61 @@ This is a MEDICAL/DENTAL business. Pay special attention to:
 - Office hours
 - Emergency contact information
 """
-    
-    # Auto/Repair context
-    elif any(word in category_lower for word in ['auto', 'repair', 'garage', 'mechanic', 'car', 'vehicle']):
-        return """
+    ),
+    (
+        ['auto', 'repair', 'garage', 'mechanic', 'car', 'vehicle'],
+        """
 This is an AUTOMOTIVE/REPAIR business. Pay special attention to:
 - Service types offered
 - Business hours
 - Emergency/towing numbers
 - Owner or manager name
 """
-    
-    # Retail/Shop context
-    elif any(word in category_lower for word in ['shop', 'store', 'retail', 'boutique', 'market']):
-        return """
+    ),
+    (
+        ['shop', 'store', 'retail', 'boutique', 'market'],
+        """
 This is a RETAIL/SHOP business. Pay special attention to:
 - Store hours
 - Product categories
 - Contact for orders or inquiries
 - Owner name
 """
-    
-    # Professional Services
-    elif any(word in category_lower for word in ['law', 'attorney', 'accounting', 'consulting', 'agency']):
-        return """
+    ),
+    (
+        ['law', 'attorney', 'accounting', 'consulting', 'agency'],
+        """
 This is a PROFESSIONAL SERVICES business. Pay special attention to:
 - Professional names (lawyers, accountants, consultants)
 - Areas of practice/specialization
 - Office hours
 - Consultation contact information
 """
+    )
+]
+
+
+def _get_category_context(category):
+    """
+    Get category-specific extraction context
+
+    Args:
+        category: Business category/type
+
+    Returns:
+        Additional context string for AI prompt
+    """
+    if not category:
+        return ""
+
+    category_lower = category.lower()
     
+    for keywords, context in CATEGORY_CONTEXT_MAPPING:
+        if any(word in category_lower for word in keywords):
+            return context
+
     # Default context
-    else:
-        return f"""
+    return f"""
 This is a {category} business. Extract all relevant contact information.
 """
 
