@@ -1,6 +1,7 @@
 import unittest
 from modules.extractor import _get_category_context
 
+
 class TestExtractor(unittest.TestCase):
     def test_get_category_context_restaurant(self):
         context = _get_category_context('Cafe')
@@ -35,6 +36,7 @@ class TestExtractor(unittest.TestCase):
     def test_get_category_context_empty(self):
         self.assertEqual(_get_category_context(''), "")
         self.assertEqual(_get_category_context(None), "")
+
 
 if __name__ == '__main__':
     unittest.main()
