@@ -36,8 +36,37 @@ def discover_restaurants(location, quantity=100, category='restaurant'):
     logger.info(f"AI WILL RUN: {len(search_plan.get('queries', []))} searches")
     
     # Phase 2: AI executes the searches
-    all_names = []
     queries = search_plan.get('queries', [])
+    all_names = _execute_searches(queries, location, category, quantity)
+
+    # Phase 3: AI validates and cleans results
+    logger.info(f"AI VALIDATION: Cleaning {len(all_names)} names...")
+    validated = _ai_validate_names(all_names, location, category)
+
+    logger.info(f"AI VALIDATED: {len(validated)} quality names")
+
+    # Return requested quantity
+    final = validated[:quantity]
+
+    logger.info(f"AI COMPLETE: Returning {len(final)} restaurants")
+
+    return final
+
+
+def _execute_searches(queries, location, category, quantity):
+    """
+    Executes the search queries and extracts restaurant names.
+
+    Args:
+        queries: List of search queries
+        location: City/area
+        category: Business type
+        quantity: Target number
+
+    Returns:
+        List of extracted name dicts
+    """
+    all_names = []
     
     for i, query in enumerate(queries, 1):
         logger.info(f"AI Query {i}/{len(queries)}: {query}")
@@ -61,19 +90,8 @@ def discover_restaurants(location, quantity=100, category='restaurant'):
         except Exception as e:
             logger.warning(f"  Search failed: {e}")
             continue
-    
-    # Phase 3: AI validates and cleans results
-    logger.info(f"AI VALIDATION: Cleaning {len(all_names)} names...")
-    validated = _ai_validate_names(all_names, location, category)
-    
-    logger.info(f"AI VALIDATED: {len(validated)} quality names")
-    
-    # Return requested quantity
-    final = validated[:quantity]
-    
-    logger.info(f"AI COMPLETE: Returning {len(final)} restaurants")
-    
-    return final
+
+    return all_names
 
 
 def _ai_plan_search_strategy(location, quantity, category):
