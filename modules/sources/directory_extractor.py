@@ -4,11 +4,9 @@ Extracts business contact information FROM directory/aggregator sites
 """
 
 import re
-import json
 import requests
 from bs4 import BeautifulSoup
 from modules.utils import logger, retry_on_failure, is_valid_email, format_phone
-import config
 
 
 # ============================================================
@@ -55,9 +53,11 @@ def is_extractable_directory(url):
             return True, dir_type
     
     # Check for generic directory patterns
-    directory_keywords = ['directory', 'business-list', 'company-profile', 'local-business']
+    directory_keywords = [
+        'directory', 'business-list', 'company-profile', 'local-business'
+    ]
     if any(kw in url_lower for kw in directory_keywords):
-        logger.info(f"Detected generic directory pattern in URL")
+        logger.info("Detected generic directory pattern in URL")
         return True, 'generic'
     
     return False, None
