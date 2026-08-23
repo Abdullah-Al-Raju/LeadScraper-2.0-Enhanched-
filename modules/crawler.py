@@ -319,16 +319,22 @@ def _extract_social_links(soup):
         'linkedin': None
     }
     
+    social_domains = {
+        'facebook': ['facebook.com'],
+        'instagram': ['instagram.com'],
+        'twitter': ['twitter.com', 'x.com'],
+        'linkedin': ['linkedin.com']
+    }
+
     for link in soup.find_all('a', href=True):
-        href = link['href'].lower()
+        href_lower = link['href'].lower()
         
-        if 'facebook.com' in href and not social_links['facebook']:
-            social_links['facebook'] = link['href']
-        elif 'instagram.com' in href and not social_links['instagram']:
-            social_links['instagram'] = link['href']
-        elif ('twitter.com' in href or 'x.com' in href) and not social_links['twitter']:
-            social_links['twitter'] = link['href']
-        elif 'linkedin.com' in href and not social_links['linkedin']:
-            social_links['linkedin'] = link['href']
-    
+        for network, domains in social_domains.items():
+            if not social_links[network] and any(domain in href_lower for domain in domains):
+                social_links[network] = link['href']
+                break
+
+        if all(social_links.values()):
+            break
+
     return social_links
