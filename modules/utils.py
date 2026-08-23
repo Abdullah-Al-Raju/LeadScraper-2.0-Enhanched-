@@ -447,7 +447,8 @@ class ProgressTracker:
     def finish(self):
         """Mark as finished"""
         elapsed = time.time() - self.start_time
+        time_per_item = elapsed / self.total if self.total > 0 else 0
         logger.info(
             f"Completed {self.total} items in {elapsed/60:.1f} minutes "
-            f"({elapsed/self.total:.1f}s per item)"
+            f"({time_per_item:.1f}s per item)"
         )
