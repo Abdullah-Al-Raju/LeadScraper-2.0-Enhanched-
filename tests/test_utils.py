@@ -1,13 +1,13 @@
 import unittest
-from unittest.mock import patch, MagicMock
-import time
+from unittest.mock import patch
 import sys
 import os
 
 # Add the parent directory to the path so we can import the modules
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from modules.utils import ProgressTracker
+from modules.utils import ProgressTracker  # noqa: E402
+
 
 class TestProgressTracker(unittest.TestCase):
 
@@ -28,7 +28,7 @@ class TestProgressTracker(unittest.TestCase):
         log_message = mock_logger.info.call_args[0][0]
 
         self.assertIn("Completed 10 items", log_message)
-        self.assertIn("in 1.0 minutes", log_message) # 60s / 60 = 1.0
+        self.assertIn("in 1.0 minutes", log_message)  # 60s / 60 = 1.0
         self.assertIn("(6.0s per item)", log_message)
 
     @patch('modules.utils.logger')
@@ -64,6 +64,7 @@ class TestProgressTracker(unittest.TestCase):
         self.assertIn("(10.0%)", log_message)
         self.assertIn("- Elapsed: 1.0m", log_message)
         self.assertIn("- Working...", log_message)
+
 
 if __name__ == '__main__':
     unittest.main()
