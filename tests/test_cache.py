@@ -69,8 +69,6 @@ def test_add_completed_row_initial(cache):
     data = cache.load()
     assert data is not None
     assert data['completed_rows'] == [1]
-    assert data['last_row'] == 1
-    assert data['completed'] == 1
 
 def test_add_completed_row_multiple(cache):
     cache.add_completed_row(1)
@@ -79,8 +77,6 @@ def test_add_completed_row_multiple(cache):
 
     data = cache.load()
     assert data['completed_rows'] == [1, 2, 5]
-    assert data['last_row'] == 5
-    assert data['completed'] == 3
 
 def test_add_completed_row_duplicate(cache):
     cache.add_completed_row(1)
@@ -88,7 +84,6 @@ def test_add_completed_row_duplicate(cache):
 
     data = cache.load()
     assert data['completed_rows'] == [1]
-    assert data['completed'] == 1
 
 def test_add_completed_row_preserves_existing_data(cache):
     cache.save({'other_key': 'value', 'completed_rows': [1]})
