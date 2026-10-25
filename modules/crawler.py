@@ -144,26 +144,22 @@ async def _crawl_with_milli(url: str, max_contact_pages: int = 2) -> Optional[Di
             'milli_contacts': milli_contacts
         }
         
-        # 2. Discover Contact Pages
+        # 2. Discover Contact Pages from page links
         contact_urls = []
         if soup:
             contact_urls = _find_contact_pages(soup, url)
             
-        if not contact_urls:
-            common_candidates = [
-                urljoin(url, "/contact"),
-                urljoin(url, "/contact-us"),
-                urljoin(url, "/about"),
-                urljoin(url, "/about-us"),
-                urljoin(url, "/locations")
-            ]
-            contact_urls = common_candidates[:max_contact_pages]
+        # Only check blind guess if no contact URLs were found and no email was extracted on homepage
+        if not contact_urls and not crawl_data['mailto_links'] and not milli_contacts.get('emails'):
+            contact_urls = [urljoin(url, "/contact")][:max_contact_pages]
+        else:
+            contact_urls = contact_urls[:max_contact_pages]
             
-        # 3. Fetch subpages with Milli concurrently
+        # 3. Fetch subpages with Milli concurrently with tight timeout
         if contact_urls:
             async def _fetch_sub(sub_url: str):
                 try:
-                    sub_res = await scraper.scrape_url(sub_url, triage=True)
+                    sub_res = await asyncio.wait_for(scraper.scrape_url(sub_url, triage=True), timeout=3.5)
                     sub_html = sub_res.get("html") or ""
                     sub_soup = BeautifulSoup(sub_html, 'lxml') if sub_html else None
                     sub_text = sub_res.get("markdown") or (extract_visible_text(sub_soup) if sub_soup else "")
