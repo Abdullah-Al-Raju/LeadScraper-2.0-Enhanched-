@@ -30,6 +30,7 @@ cache/
 Thumbs.db
 desktop.ini
 
-# Testing artifacts
+# Testing artifacts & outputs
 tests/__pycache__/
 .pytest_cache/
+output/

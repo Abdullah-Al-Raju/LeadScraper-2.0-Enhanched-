@@ -53,6 +53,11 @@ def merge_multi_source_data(sources_data):
         'website': [],
         'facebook': [],
         'instagram': [],
+        'twitter': [],
+        'linkedin': [],
+        'youtube': [],
+        'tiktok': [],
+        'whatsapp': [],
         'business_hours': []
     }
     
@@ -72,7 +77,7 @@ def merge_multi_source_data(sources_data):
             merged['source_urls']['website'] = source_data['website']
         
         # Collect field data
-        for field in ['business_name', 'street_address', 'city', 'state', 'zip_code', 'website', 'facebook', 'instagram', 'business_hours']:
+        for field in ['business_name', 'street_address', 'city', 'state', 'zip_code', 'website', 'facebook', 'instagram', 'twitter', 'linkedin', 'youtube', 'tiktok', 'whatsapp', 'business_hours']:
             value = source_data.get(field)
             if value:
                 field_sources[field].append((value, source_type))
@@ -97,6 +102,11 @@ def merge_multi_source_data(sources_data):
     merged['website'] = _resolve_single_field(field_sources['website'])
     merged['facebook'] = _resolve_single_field(field_sources['facebook']) or merged['source_urls'].get('facebook')
     merged['instagram'] = _resolve_single_field(field_sources['instagram']) or merged['source_urls'].get('instagram')
+    merged['twitter'] = _resolve_single_field(field_sources.get('twitter', []))
+    merged['linkedin'] = _resolve_single_field(field_sources.get('linkedin', []))
+    merged['youtube'] = _resolve_single_field(field_sources.get('youtube', []))
+    merged['tiktok'] = _resolve_single_field(field_sources.get('tiktok', []))
+    merged['whatsapp'] = _resolve_single_field(field_sources.get('whatsapp', []))
     merged['business_hours'] = _resolve_single_field(field_sources['business_hours'])
     
     # Merge lists (prioritize most common)
@@ -175,7 +185,7 @@ def _resolve_list_field(field_dict):
 # CONFIDENCE SCORING
 # ============================================================
 
-def calculate_confidence_score(merged_data, field_sources):
+def calculate_confidence_score(merged_data, field_sources=None):
     """
     Calculate confidence score (0-100) based on:
     - Number of sources
@@ -184,11 +194,14 @@ def calculate_confidence_score(merged_data, field_sources):
     
     Args:
         merged_data: Merged contact data
-        field_sources: Field occurrence tracking
+        field_sources: Field occurrence tracking (optional)
         
     Returns:
         Confidence score 0-100
     """
+    if field_sources is None:
+        field_sources = {}
+        
     score = 0
     
     # Base score from number of sources (max 30 points)

@@ -198,22 +198,56 @@ If no valid names, return: []"""
 Return ONLY real {category} business names in {location}."""
 
     try:
-        # Use AIManager for model rotation
+        # Use AIManager for model rotation if available
         names = ai_call(system_prompt, user_prompt, temperature=0.2)
         
-        if not names or not isinstance(names, list):
-            return []
-        
-        # Convert to dicts
-        return [
-            {'name': name, 'location': location, 'category': category}
-            for name in names
-            if isinstance(name, str) and 3 <= len(name) <= 60
-        ]
-        
+        if names and isinstance(names, list):
+            return [
+                {'name': name, 'location': location, 'category': category}
+                for name in names
+                if isinstance(name, str) and 3 <= len(name) <= 60
+            ]
     except Exception as e:
-        logger.debug(f"AI extraction failed: {e}")
-        return []
+        logger.debug(f"AI extraction unavailable ({e}), using heuristic discovery")
+
+    # Local Zero-Cost Heuristic Fallback
+    import re
+    candidates = []
+    
+    # 1. Look for numbered lists in snippets: e.g. "1. Tartine Bakery", "2. Sightglass"
+    numbered_matches = re.findall(r'(?:^|\n|\s)\d+\.\s+([A-Z][A-Za-z0-9\s\'&-]{2,40})', combined_text)
+    for m in numbered_matches:
+        clean_m = m.strip()
+        if len(clean_m) >= 3 and not any(w in clean_m.lower() for w in ['best', 'top', 'guide', 'michelin', 'review', 'restaurant', 'coffee']):
+            candidates.append(clean_m)
+
+    # 2. Extract from titles
+    for r in results:
+        title = r.get('title', '')
+        # Split on standard title delimiters
+        parts = re.split(r'[-|:•—]', title)
+        for part in parts:
+            clean = part.strip()
+            # Exclude aggregator and listicle terms
+            clean_lower = clean.lower()
+            if any(term in clean_lower for term in ['yelp', 'tripadvisor', 'foursquare', 'wikipedia', 'the 10', 'the 15', 'top 10', 'best 10', 'best restaurants', 'guide to']):
+                continue
+            if re.match(r'^(\d+|\bthe\b|\bbest\b|\btop\b)\s+', clean, re.IGNORECASE):
+                continue
+            if 3 <= len(clean) <= 45 and not clean.startswith(('http', 'www.')):
+                if clean_lower not in [location.lower(), f"in {location.lower()}", category.lower()]:
+                    candidates.append(clean)
+
+    # Deduplicate preserving order
+    seen = set()
+    result_list = []
+    for c in candidates:
+        c_low = c.lower()
+        if c_low not in seen:
+            seen.add(c_low)
+            result_list.append({'name': c, 'location': location, 'category': category})
+
+    return result_list
 
 
 def _ai_validate_names(names, location, category):

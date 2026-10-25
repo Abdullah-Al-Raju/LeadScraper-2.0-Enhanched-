@@ -2,7 +2,13 @@
 DuckDuckGo Search Module (ASYNC VERSION)
 Search for business websites and filter aggregators
 """
-from ddgs import DDGS
+try:
+    from ddgs import DDGS
+except ImportError:
+    try:
+        from duckduckgo_search import DDGS
+    except ImportError:
+        DDGS = None
 import time
 import asyncio
 import config
@@ -122,7 +128,8 @@ def validate_search_setup():
     """
     try:
         # Test ddg search
-        from ddgs import DDGS  # FIXED: was duckduckgo_search
+        if DDGS is None:
+            raise ImportError("Neither duckduckgo-search nor ddgs is installed")
         logger.info("DuckDuckGo search module validated")
         return True
     except ImportError:
@@ -147,7 +154,9 @@ def search_duckduckgo(query, max_results=10):
         List of search result dictionaries
     """
     try:
-        from ddgs import DDGS  # FIXED: was duckduckgo_search
+        if DDGS is None:
+            logger.error("DDGS module is not available")
+            return []
         results = list(DDGS().text(query, max_results=max_results))
         return results
     except Exception as e:

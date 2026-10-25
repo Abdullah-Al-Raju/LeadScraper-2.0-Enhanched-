@@ -320,7 +320,7 @@ def hash_business(name, city=""):
 
 def is_valid_email(email):
     """
-    Basic email validation
+    Basic email validation with false positive filtering
     
     Args:
         email: Email address
@@ -331,15 +331,22 @@ def is_valid_email(email):
     if not email:
         return False
     
-    # Exclude noreply and generic emails
-    invalid_prefixes = ['noreply', 'no-reply', 'donotreply']
-    if any(prefix in email.lower() for prefix in invalid_prefixes):
+    email_clean = email.lower().strip()
+    
+    # Exclude image/asset extensions commonly matched in HTML
+    invalid_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.css', '.js', '.ico', '.woff', '.ttf')
+    if email_clean.endswith(invalid_extensions):
+        return False
+    
+    # Exclude noreply and automated emails
+    invalid_prefixes = ['noreply', 'no-reply', 'donotreply', 'mailer-daemon']
+    if any(email_clean.startswith(prefix) for prefix in invalid_prefixes):
         return False
     
     # Basic format check
     import re
     pattern = config.EMAIL_PATTERN
-    return bool(re.match(pattern, email))
+    return bool(re.match(pattern, email_clean))
 
 
 def format_phone(phone):
@@ -358,6 +365,12 @@ def format_phone(phone):
     # Remove all non-digits
     import re
     digits = re.sub(r'\D', '', phone)
+    
+    # Reject strings with insufficient digits or repetitive dummy numbers
+    if len(digits) < 7:
+        return None
+    if len(set(digits)) <= 1:
+        return None
     
     # Handle US phone numbers (10 digits)
     if len(digits) == 10:

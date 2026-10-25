@@ -19,20 +19,28 @@ from modules.utils import (
 
 def extract_contacts(crawl_data, category=None):
     """
-    Extract contact information using multi-tier approach
-    
-    Args:
-        crawl_data: Dictionary from crawler module
-        category: Business category/type for context-aware extraction
-        
-    Returns:
-        Dictionary with extracted contact information
+    Extract contact information using multi-tier approach:
+    Tier 0: Milli Direct Discoveries
+    Tier 1: Structured data (JSON-LD)
+    Tier 2: AI extraction (category-aware)
+    Tier 3: Regex fallback
     """
     if not crawl_data:
         return None
     
     # Try Tier 1: Structured data (JSON-LD)
     contacts = extract_from_structured_data(crawl_data.get('structured_data', []))
+    
+    # Merge direct Milli discovered contacts
+    milli_contacts = crawl_data.get('milli_contacts', {})
+    if milli_contacts:
+        for em in milli_contacts.get('emails', []):
+            if is_valid_email(em) and em not in contacts.get('email_addresses', []):
+                contacts.setdefault('email_addresses', []).append(em)
+        for ph in milli_contacts.get('phones', []):
+            formatted_p = format_phone(ph)
+            if formatted_p and formatted_p not in contacts.get('phone_numbers', []):
+                contacts.setdefault('phone_numbers', []).append(formatted_p)
     
     # Try Tier 2: AI extraction (category-aware)
     if not _is_sufficient(contacts):
@@ -55,14 +63,9 @@ def extract_contacts(crawl_data, category=None):
     
     # Add social links
     social = crawl_data.get('social_links', {})
-    if not contacts.get('facebook'):
-        contacts['facebook'] = social.get('facebook')
-    if not contacts.get('instagram'):
-        contacts['instagram'] = social.get('instagram')
-    if not contacts.get('twitter'):
-        contacts['twitter'] = social.get('twitter')
-    if not contacts.get('linkedin'):
-        contacts['linkedin'] = social.get('linkedin')
+    for platform in ['facebook', 'instagram', 'twitter', 'linkedin', 'youtube', 'tiktok', 'whatsapp']:
+        if not contacts.get(platform) and social.get(platform):
+            contacts[platform] = social.get(platform)
     
     # Add website
     if not contacts.get('website'):
@@ -436,6 +439,9 @@ def _empty_contacts():
         'instagram': None,
         'twitter': None,
         'linkedin': None,
+        'youtube': None,
+        'tiktok': None,
+        'whatsapp': None,
         'business_hours': None,
         'owner_name': None
     }

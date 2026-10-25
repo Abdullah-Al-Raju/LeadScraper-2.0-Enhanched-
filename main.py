@@ -6,6 +6,7 @@ Automated local business contact finder
 import sys
 import argparse
 import time
+import asyncio
 import config
 from modules.utils import logger, calculate_completeness, ProgressTracker
 from modules.sheets import (
@@ -404,26 +405,29 @@ def process_business(sheet, row, progress, stats, cache=None):
 # VALIDATION
 # ============================================================
 
-def _validate_config():
+def _validate_config(require_sheets=True):
     """
     Validate configuration
     
+    Args:
+        require_sheets: Whether Google Sheets setup is strictly required
+        
     Returns:
         Boolean indicating if config is valid
     """
     valid = True
     
-    if not config.GOOGLE_SHEET_ID:
-        logger.error("GOOGLE_SHEET_ID not set. Please configure in .env file")
-        valid = False
-    
-    if not config.SERVICE_ACCOUNT_FILE:
-        logger.error("SERVICE_ACCOUNT_FILE not set. Please configure in .env file")
-        valid = False
+    if require_sheets:
+        if not config.GOOGLE_SHEET_ID:
+            logger.error("GOOGLE_SHEET_ID not set in .env. Run with --local or --output to operate standalone without Google Sheets.")
+            valid = False
+        
+        if not config.SERVICE_ACCOUNT_FILE or not os.path.exists(config.SERVICE_ACCOUNT_FILE):
+            logger.error(f"SERVICE_ACCOUNT_FILE ({config.SERVICE_ACCOUNT_FILE}) not found. Run with --local or --output to operate standalone.")
+            valid = False
     
     if not config.OPENROUTER_API_KEY:
-        logger.warning("OPENROUTER_API_KEY not set. AI extraction will be disabled.")
-        logger.warning("The tool will still work with regex fallback.")
+        logger.debug("OPENROUTER_API_KEY not set. Operating in zero-cost local extraction mode.")
     
     return valid
 
@@ -480,13 +484,13 @@ def _is_discovery_mode(rows):
 
 
 # ============================================================
-# ENTRY POINT
+# ENTRY POINT & STANDALONE CLI RUNNERS
 # ============================================================
 
 def parse_args():
     """Parse command-line arguments"""
     parser = argparse.ArgumentParser(
-        description='LeadScraper AI Agent - Intelligent Business Discovery & Extraction'
+        description='LeadScraper AI Agent - Intelligent Business Discovery & Extraction (Milli-Enhanced)'
     )
     
     parser.add_argument(
@@ -498,8 +502,8 @@ def parse_args():
     parser.add_argument(
         '--quantity',
         type=int,
-        default=config.DEFAULT_DISCOVERY_QUANTITY,
-        help=f'Number of businesses to find (default: {config.DEFAULT_DISCOVERY_QUANTITY})'
+        default=getattr(config, 'DEFAULT_DISCOVERY_QUANTITY', 10),
+        help='Number of businesses to find (default: 10)'
     )
     
     parser.add_argument(
@@ -508,73 +512,229 @@ def parse_args():
         default='restaurant',
         help='Business category (default: restaurant)'
     )
+
+    parser.add_argument(
+        '--url',
+        type=str,
+        help='Direct URL mode: Scrape and extract contacts directly from website URL'
+    )
+
+    parser.add_argument(
+        '--business',
+        type=str,
+        help='Direct business mode: Search and extract a single business by name'
+    )
+
+    parser.add_argument(
+        '--city',
+        type=str,
+        default='',
+        help='City/location filter for business search'
+    )
+
+    parser.add_argument(
+        '--local',
+        action='store_true',
+        help='Run in local mode without requiring Google Sheets'
+    )
+
+    parser.add_argument(
+        '--output',
+        type=str,
+        help='Output file path (.csv or .json) for local exports'
+    )
+
+    parser.add_argument(
+        '--no-milli',
+        action='store_true',
+        help='Disable Milli Universal Scraper and use fallback HTTPX'
+    )
     
     return parser.parse_args()
 
 
-def run_cli_discovery(location, quantity, category):
+async def _async_scrape_direct_url(url: str, category: str = "", force_milli: bool = True):
+    from urllib.parse import urlparse
+    from modules.crawler import crawl_website
+    from modules.extractor import extract_contacts
+    from modules.utils import calculate_completeness
+    
+    crawl_data = await crawl_website(url, force_milli=force_milli)
+    if not crawl_data:
+        return None
+        
+    contacts = extract_contacts(crawl_data, category=category) or {}
+    contacts['website'] = url
+    domain_name = urlparse(url).netloc.replace('www.', '').split('.')[0].title()
+    contacts['business_name'] = contacts.get('business_name') or domain_name
+    contacts['completeness_score'] = calculate_completeness(contacts)
+    contacts['confidence_score'] = contacts['completeness_score']
+    contacts['sources_used'] = [crawl_data.get('engine_used', 'milli_universal')]
+    return contacts
+
+
+async def _async_scrape_single_business(business_name: str, city: str = "", category: str = "", force_milli: bool = True):
+    from modules.search import search_for_website
+    from modules.sources.search_result_extractor import extract_from_search_results, extract_from_social_search
+    from modules.fusion import merge_multi_source_data
+    from modules.crawler import crawl_website
+    from modules.extractor import extract_contacts
+    from modules.utils import calculate_completeness
+    
+    loop = asyncio.get_event_loop()
+    display.info(f"Searching official website for: {business_name} ({city})...")
+    website_url = await search_for_website(business_name, city)
+    
+    sources_data = []
+    
+    # 1. Search snippet extraction
+    try:
+        search_contacts = await loop.run_in_executor(None, extract_from_search_results, business_name, city, category)
+        if search_contacts:
+            sources_data.append(search_contacts)
+    except Exception as e:
+        logger.debug(f"Search snippet extraction: {e}")
+        
+    # 2. Crawl website with Milli
+    if website_url:
+        display.info(f"Found website: {website_url}. Crawling with Milli...")
+        crawl_data = await crawl_website(website_url, force_milli=force_milli)
+        if crawl_data:
+            contacts = extract_contacts(crawl_data, category=category) or {}
+            contacts['source_type'] = 'website'
+            contacts['website'] = website_url
+            sources_data.append(contacts)
+            
+    # 3. Social search extraction (Facebook)
+    try:
+        fb_contacts = await loop.run_in_executor(None, extract_from_social_search, business_name, city, 'facebook')
+        if fb_contacts:
+            sources_data.append(fb_contacts)
+    except Exception:
+        pass
+        
+    if not sources_data:
+        return {'business_name': business_name, 'city': city, 'confidence_score': 0}
+        
+    merged = merge_multi_source_data(sources_data)
+    merged['business_name'] = business_name
+    merged['city'] = city
+    merged['category'] = category
+    if website_url and not merged.get('website'):
+        merged['website'] = website_url
+    merged['completeness_score'] = calculate_completeness(merged)
+    return merged
+
+
+def run_cli_discovery(location, quantity, category, local_mode=False, output_file=None, force_milli=True):
     """
-    Run discovery mode from CLI - COMPLETE SOLUTION
-    
-    Discovers businesses AND extracts contact details automatically!
-    
-    Args:
-        location: Location to search
-        quantity: Number to find
-        category: Business type
+    Run discovery mode from CLI. Supports both Google Sheets and Local Export.
     """
     from modules.restaurant_discovery import discover_restaurants
-    from modules.sheets import clear_input_sheet, populate_input_sheet
+    from modules.local_exporter import export_to_csv, export_to_json, print_lead_summary
     
-    display.section_header(f"AI AGENT MODE: {quantity} {category}s in {location}")
-    
-    # Connect to sheets
-    display.info("Connecting to Google Sheet...")
-    workbook = connect_to_sheet()
-    
-    # Clear input sheet
-    if config.AUTO_CLEAR_INPUT_ON_DISCOVERY:
-        display.info("Clearing input sheet for fresh start...")
-        clear_input_sheet(workbook)
-    
-    # Discover
+    display.section_header(f"DISCOVERY MODE: {quantity} {category}s in {location}")
     display.ai(f"Discovering {quantity} {category}s...")
-    restaurants = discover_restaurants(location, quantity, category)
     
+    restaurants = discover_restaurants(location, quantity, category)
     if not restaurants:
         display.error("Discovery failed - no businesses found")
         sys.exit(1)
+        
+    display.success(f"Discovered {len(restaurants)} businesses!")
+
+    if local_mode or output_file:
+        display.info("Running local extraction with Milli...")
+        leads = []
+        for idx, item in enumerate(restaurants, 1):
+            name = item.get('name') or item.get('business_name') or item.get('search_term')
+            city = item.get('city') or location
+            display.info(f"[{idx}/{len(restaurants)}] Processing: {name} ({city})")
+            lead = asyncio.run(_async_scrape_single_business(name, city=city, category=category, force_milli=force_milli))
+            if lead:
+                leads.append(lead)
+                print_lead_summary(lead)
+                
+        out_path = output_file or "output/leads.json"
+        if out_path.endswith('.csv'):
+            export_to_csv(leads, out_path)
+        else:
+            export_to_json(leads, out_path)
+        display.section_header(f"SUCCESS: {len(leads)} leads exported to {out_path}")
+        return
+        
+    # Google Sheets mode
+    from modules.sheets import clear_input_sheet, populate_input_sheet
+    display.info("Connecting to Google Sheet...")
+    workbook = connect_to_sheet()
     
-    # Populate input sheet
+    if config.AUTO_CLEAR_INPUT_ON_DISCOVERY:
+        display.info("Clearing input sheet for fresh start...")
+        clear_input_sheet(workbook)
+        
     display.info(f"Populating input sheet with {len(restaurants)} businesses...")
     populate_input_sheet(workbook, restaurants)
-    
     display.section_header(f"DISCOVERY COMPLETE: {len(restaurants)} businesses added")
-    display.info("Now starting EXTRACTION phase...")
-    display.print_divider()
-    
-    # Automatically run extraction pipeline
     run_pipeline()
 
 
 if __name__ == "__main__":
-    # Show banner
     display.print_banner()
     
     # Initialize AI Manager with multi-model support
-    init_ai_manager(
-        api_key=config.OPENROUTER_API_KEY,
-        models=config.OPENROUTER_MODELS,
-        base_url=config.OPENROUTER_BASE_URL
-    )
-    display.success(f"AI Manager initialized with {len(config.OPENROUTER_MODELS)} models")
-    
-    # Parse CLI args
-    args = parse_args()
-    
-    if args.discover:
-        # CLI discovery mode
-        run_cli_discovery(args.discover, args.quantity, args.category)
+    if config.OPENROUTER_API_KEY:
+        init_ai_manager(
+            api_key=config.OPENROUTER_API_KEY,
+            models=config.OPENROUTER_MODELS,
+            base_url=config.OPENROUTER_BASE_URL
+        )
+        display.success(f"AI Manager initialized with {len(config.OPENROUTER_MODELS)} models")
     else:
-        # Normal mode - run pipeline
+        display.info("AI Manager: Running in local zero-cost mode (Milli High-Speed Extraction)")
+    
+    args = parse_args()
+    force_milli = not args.no_milli
+    
+    # Direct URL mode
+    if args.url:
+        display.section_header(f"DIRECT URL SCRAPE: {args.url}")
+        lead = asyncio.run(_async_scrape_direct_url(args.url, category=args.category, force_milli=force_milli))
+        if lead:
+            from modules.local_exporter import print_lead_summary, export_to_csv, export_to_json
+            print_lead_summary(lead)
+            if args.output:
+                if args.output.endswith('.csv'):
+                    export_to_csv([lead], args.output)
+                else:
+                    export_to_json([lead], args.output)
+                display.success(f"Lead saved to: {args.output}")
+        sys.exit(0)
+        
+    # Direct single business search mode
+    if args.business:
+        display.section_header(f"DIRECT BUSINESS SCRAPE: {args.business}")
+        lead = asyncio.run(_async_scrape_single_business(args.business, city=args.city, category=args.category, force_milli=force_milli))
+        if lead:
+            from modules.local_exporter import print_lead_summary, export_to_csv, export_to_json
+            print_lead_summary(lead)
+            if args.output:
+                if args.output.endswith('.csv'):
+                    export_to_csv([lead], args.output)
+                else:
+                    export_to_json([lead], args.output)
+                display.success(f"Lead saved to: {args.output}")
+        sys.exit(0)
+
+    # Discovery mode
+    if args.discover:
+        run_cli_discovery(
+            args.discover,
+            args.quantity,
+            args.category,
+            local_mode=args.local or bool(args.output),
+            output_file=args.output,
+            force_milli=force_milli
+        )
+    else:
+        # Standard Sheets pipeline mode
         run_pipeline()

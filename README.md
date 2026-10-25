@@ -109,12 +109,30 @@ SERVICE_ACCOUNT_FILE=credentials/service_account.json
 
 ### Step 5: Run It
 
+#### Option A: Standalone Local Mode (No Google Cloud or OpenRouter required! $0.00 Cost)
 ```bash
-# Discover 3 restaurants in a location
-python main.py --discover "Bonani,Bangladesh" --quantity 3
+# 1. Scrape a website directly with Milli Universal Engine
+python3 main.py --url "https://example.com" --local --output lead.json
+
+# 2. Search and scrape a specific business by name
+python3 main.py --business "Philz Coffee" --city "San Francisco" --local --output lead.csv
+
+# 3. Discover businesses locally and export to CSV
+python3 main.py --discover "Austin, TX" --quantity 5 --category "coffee" --local --output output/austin_coffee.csv
+```
+
+#### Option B: Google Sheets Pipeline Mode
+```bash
+# Discover restaurants and populate Google Sheet
+python3 main.py --discover "Bonani, Bangladesh" --quantity 3
 
 # With terminal capture (recommended — saves logs)
-python cap.py python main.py --discover "Bonani,Bangladesh" --quantity 3
+python3 cap.py python3 main.py --discover "Bonani, Bangladesh" --quantity 3
+```
+
+#### Run Unit Tests
+```bash
+pytest tests/ -v
 ```
 
 ---
@@ -166,17 +184,18 @@ main.py                     ← Entry point & pipeline orchestration
 │   ├── ai_manager.py       ← AI model rotation (15 free models!)
 │   ├── async_pipeline.py   ← Async parallel processing
 │   ├── async_config.py     ← Async settings
-│   ├── crawler.py          ← Website crawler (async)
-│   ├── extractor.py        ← Contact extraction (AI + Regex + JSON-LD)
-│   ├── fusion.py           ← Multi-source data merger
-│   ├── search.py           ← DuckDuckGo search (async)
+│   ├── crawler.py          ← Milli Universal Engine (SIMD Fast HTTP + Optical CDP + Turnstile Sniper)
+│   ├── local_exporter.py   ← Standalone CSV, JSON, and terminal card exporter
+│   ├── extractor.py        ← Contact extraction (Milli + AI + Regex + JSON-LD)
+│   ├── fusion.py           ← Multi-source data merger (Facebook, IG, X, LinkedIn, YouTube, TikTok, WA)
+│   ├── search.py           ← DuckDuckGo / DDGS search with aggregator filter
 │   ├── sheets.py           ← Google Sheets integration
-│   ├── restaurant_discovery.py  ← AI-powered business discovery
+│   ├── restaurant_discovery.py  ← AI & heuristic business discovery
 │   ├── http_client.py      ← HTTP client with retry logic
 │   ├── rate_limiter.py     ← Smart rate limiting
 │   ├── cache.py            ← Progress caching (resume support)
 │   ├── display.py          ← Terminal UI formatting
-│   ├── utils.py            ← Utility functions
+│   ├── utils.py            ← Utility functions & phone/email validation
 │   │
 │   └── sources/
 │       ├── search_result_extractor.py  ← Extract data from search snippets
