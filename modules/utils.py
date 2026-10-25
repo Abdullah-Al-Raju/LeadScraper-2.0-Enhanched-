@@ -339,7 +339,7 @@ def is_valid_email(email):
         return False
     
     # Exclude error tracking and generic tech provider domains
-    invalid_domains = ('sentry.io', 'wixpress.com', 'sentry-next.wixpress.com', 'google.com', 'schema.org', 'example.com')
+    invalid_domains = ('sentry.io', 'wixpress.com', 'sentry-next.wixpress.com', 'google.com', 'schema.org')
     if any(email_clean.endswith('@' + d) or email_clean.endswith('.' + d) for d in invalid_domains):
         return False
         
