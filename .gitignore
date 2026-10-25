@@ -33,4 +33,6 @@ desktop.ini
 # Testing artifacts & outputs
 tests/__pycache__/
 .pytest_cache/
-output/
+output/*
+!output/luxembourg_700_restaurants.csv
+!output/luxembourg_700_restaurants.json

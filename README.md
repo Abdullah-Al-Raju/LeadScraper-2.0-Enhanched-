@@ -260,6 +260,34 @@ After running, check your Google Sheet:
 
 ---
 
+## ⚡ High-Speed Milli Engine & Standalone Datasets
+
+LeadScraper 2.0 Enhanced now integrates the **Milli Universal Engine** for ultra-high-speed multi-domain scraping and deep contact discovery:
+
+- 🚀 **High-Throughput Parallelism**: Crawls up to 60+ distributed domains concurrently (~18 requests/second).
+- 🛡️ **Anti-Bot & Obfuscation Sniper**: Bypasses Cloudflare Turnstile, auto-dismisses cookie banners, and automatically deobfuscates Cloudflare protected emails (`data-cfemail` and `/cdn-cgi/l/email-protection#...`).
+- 🇪🇺 **European Impressum & Contact Deep Discovery**: Automatically scans internal routes (`/contact`, `/kontakt`, `/impressum`, `/mentions-legales`, `/about`) to extract legally published direct business emails and verified social profiles.
+- 💾 **Standalone Zero-Dependency Mode**: Generates structured CSV and JSON outputs directly without mandatory Google Sheets or paid API keys ($0.00 cost).
+
+### 🏆 Featured Dataset: Luxembourg Nationwide 700 Restaurants
+Extracted and enriched nationwide across all Luxembourg cantons and communes in **~64 seconds**:
+- **Official Websites**: 689 (98.4%)
+- **Direct Emails**: 355 (50.7%)
+- **Social Media Profiles**: 292 (41.7%) — *Facebook (264), Instagram (207), LinkedIn (23), Twitter/X (15), YouTube (11), WhatsApp (7)*
+- **Physical Street Addresses**: 531 (75.9%)
+- **Phone Numbers (Optional)**: 558 (79.7%)
+
+📁 **Direct Dataset Downloads**:
+- [`output/luxembourg_700_restaurants.csv`](output/luxembourg_700_restaurants.csv)
+- [`output/luxembourg_700_restaurants.json`](output/luxembourg_700_restaurants.json)
+
+To execute or re-run the high-speed crawler:
+```bash
+python3 scripts/scrape_luxembourg_restaurants.py
+```
+
+---
+
 ## 🤔 FAQ
 
 ### General Questions
