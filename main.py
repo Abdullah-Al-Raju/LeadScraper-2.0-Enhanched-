@@ -582,9 +582,9 @@ async def _async_scrape_direct_url(url: str, category: str = "", force_milli: bo
     contacts = extract_contacts(crawl_data, category=category) or {}
     contacts['website'] = url
     domain_name = urlparse(url).netloc.replace('www.', '').split('.')[0].title()
-    contacts['business_name'] = contacts.get('business_name') or domain_name
-    contacts['completeness_score'] = calculate_completeness(contacts)
-    contacts['confidence_score'] = contacts['completeness_score']
+    comp = calculate_completeness(contacts)
+    contacts['completeness_score'] = comp
+    contacts['confidence_score'] = int(comp * 100) if comp <= 1.0 else int(comp)
     contacts['sources_used'] = [crawl_data.get('engine_used', 'milli_universal')]
     return contacts
 
@@ -680,12 +680,24 @@ def run_cli_discovery(location, quantity, category, local_mode=False, output_fil
             if idx < len(businesses):
                 time.sleep(1.0)
                 
-        out_path = output_file or "output/leads.json"
-        if out_path.endswith('.csv'):
-            export_to_csv(leads, out_path)
+        if output_file:
+            if output_file.endswith('.csv'):
+                export_to_csv(leads, output_file)
+            elif output_file.endswith('.txt'):
+                export_to_txt(leads, output_file)
+            else:
+                export_to_json(leads, output_file)
+            display.section_header(f"SUCCESS: {len(leads)} leads exported to {output_file}")
         else:
-            export_to_json(leads, out_path)
-        display.section_header(f"SUCCESS: {len(leads)} leads exported to {out_path}")
+            from modules.local_exporter import export_all_formats
+            saved = export_all_formats(leads)
+            print("\n" + "=" * 65)
+            print(f"  🎉 SUCCESS: {len(leads)} leads exported to your machine!")
+            print("=" * 65)
+            print(f"  📁 Excel / Sheets (CSV):  {saved['csv']}")
+            print(f"  📁 Structured Data (JSON): {saved['json']}")
+            print(f"  📁 Human-Readable Report:  {saved['txt']}")
+            print("=" * 65)
         return
         
     # Google Sheets mode
@@ -703,9 +715,134 @@ def run_cli_discovery(location, quantity, category, local_mode=False, output_fil
     run_pipeline()
 
 
-def cli():
+def interactive_menu():
+    """Interactive guided wizard for users who prefer not to use CLI commands."""
     display.print_banner()
+    display.info("Engine: Milli Universal V8 Hyper-Reflex (Integrated Core Engine)")
     
+    from modules.ai_manager import ai_manager
+    if ai_manager.is_available() and getattr(config, 'ENABLE_AI_FALLBACK', True):
+        display.info(f"AI Tier: OpenRouter Free Auto-Router ({config.OPENROUTER_MODEL})")
+    else:
+        display.info("AI Tier: Standalone Deterministic Mode ($0 Cost)")
+
+    print("\n" + "=" * 65)
+    print("  SELECT AN EXTRACTION TEMPLATE:")
+    print("=" * 65)
+    print("  [1] Direct Website Extraction")
+    print("      -> Provide a website link (e.g. https://example.com)")
+    print("  [2] Named Business Search")
+    print("      -> Provide a business name and location (e.g. Joe's Bakery, Austin)")
+    print("  [3] Dynamic Business Discovery")
+    print("      -> Provide a country/city, category, and quantity of leads")
+    print("  [4] Exit")
+    print("=" * 65)
+
+    choice = ""
+    while choice not in ('1', '2', '3', '4'):
+        choice = input("\n👉 Choose template [1-4]: ").strip()
+
+    if choice == '4':
+        print("\nExiting. Have a great day!")
+        sys.exit(0)
+
+    from modules.local_exporter import print_lead_summary, export_all_formats
+    leads = []
+
+    if choice == '1':
+        print("\n" + "-" * 50)
+        print("Template 1: Direct Website Extraction")
+        print("-" * 50)
+        url = ""
+        while not url:
+            url = input("Enter website URL (e.g. https://www.joscoffee.com): ").strip()
+            if not url:
+                print("Website URL cannot be empty.")
+        if not url.startswith(('http://', 'https://')):
+            url = 'https://' + url
+
+        display.section_header(f"EXTRACTING: {url}")
+        lead = asyncio.run(_async_scrape_direct_url(url, force_milli=True))
+        if lead:
+            leads.append(lead)
+            print_lead_summary(lead)
+
+    elif choice == '2':
+        print("\n" + "-" * 50)
+        print("Template 2: Named Business Search")
+        print("-" * 50)
+        biz_name = ""
+        while not biz_name:
+            biz_name = input("Enter business name (e.g. Joe's Bakery): ").strip()
+            if not biz_name:
+                print("Business name cannot be empty.")
+        city = input("Enter city / location (e.g. Austin, TX) [optional]: ").strip()
+
+        display.section_header(f"SEARCHING & VERIFYING: {biz_name} ({city})")
+        lead = asyncio.run(_async_scrape_single_business(biz_name, city=city, force_milli=True))
+        if lead:
+            leads.append(lead)
+            print_lead_summary(lead)
+
+    elif choice == '3':
+        print("\n" + "-" * 50)
+        print("Template 3: Dynamic Business Discovery")
+        print("-" * 50)
+        location = ""
+        while not location:
+            location = input("Enter country / city (e.g. Austin, TX or London, UK): ").strip()
+            if not location:
+                print("Location cannot be empty.")
+                
+        category = ""
+        while not category:
+            category = input("Enter business category (e.g. coffee shop, plumber, dentist): ").strip()
+            if not category:
+                print("Category cannot be empty.")
+
+        qty_input = input("Enter quantity of leads to discover [default: 5]: ").strip()
+        quantity = int(qty_input) if qty_input.isdigit() and int(qty_input) > 0 else 5
+
+        display.section_header(f"DISCOVERING {quantity} {category.upper()} LEADS IN {location.upper()}")
+        from modules.discovery import discover_businesses
+        discovered = discover_businesses(location, quantity, category)
+        if not discovered:
+            display.error("Discovery failed - no businesses found")
+            return
+
+        display.success(f"Discovered {len(discovered)} businesses! Processing with Milli...")
+        for idx, item in enumerate(discovered, 1):
+            name = item.get('name') or item.get('business_name') or item.get('search_term')
+            b_city = item.get('city') or location
+            display.info(f"[{idx}/{len(discovered)}] Processing: {name} ({b_city})")
+            lead = asyncio.run(_async_scrape_single_business(name, city=b_city, category=category, force_milli=True))
+            if lead:
+                leads.append(lead)
+                print_lead_summary(lead)
+            if idx < len(discovered):
+                time.sleep(1.0)
+
+    if leads:
+        saved = export_all_formats(leads)
+        print("\n" + "=" * 65)
+        print("  🎉 SUCCESS: All leads successfully saved to your machine!")
+        print("=" * 65)
+        print(f"  📁 CSV (Excel / Sheets):  {saved['csv']}")
+        print(f"  📁 JSON (Data / CRM):      {saved['json']}")
+        print(f"  📁 Text Report (Summary):  {saved['txt']}")
+        print("=" * 65)
+        print("  You can open the CSV file directly in Microsoft Excel or Google Sheets.\n")
+    else:
+        display.warning("No leads could be extracted.")
+
+
+def cli():
+    # If no flags passed, launch the friendly interactive wizard!
+    if len(sys.argv) == 1:
+        interactive_menu()
+        return
+
+    display.print_banner()
     display.info("Engine: Milli Universal V8 Hyper-Reflex High-Speed Extraction ($0.00 Cost)")
     
     args = parse_args()
@@ -727,14 +864,24 @@ def cli():
         display.section_header(f"DIRECT URL SCRAPE: {args.url}")
         lead = asyncio.run(_async_scrape_direct_url(args.url, category=args.category, force_milli=force_milli))
         if lead:
-            from modules.local_exporter import print_lead_summary, export_to_csv, export_to_json
+            from modules.local_exporter import print_lead_summary, export_to_csv, export_to_json, export_to_txt, export_all_formats
             print_lead_summary(lead)
             if args.output:
                 if args.output.endswith('.csv'):
                     export_to_csv([lead], args.output)
+                elif args.output.endswith('.txt'):
+                    export_to_txt([lead], args.output)
                 else:
                     export_to_json([lead], args.output)
                 display.success(f"Lead saved to: {args.output}")
+            else:
+                saved = export_all_formats([lead])
+                print("\n" + "=" * 65)
+                print("  🎉 SUCCESS: Lead saved to all formats!")
+                print(f"  📁 CSV:  {saved['csv']}")
+                print(f"  📁 JSON: {saved['json']}")
+                print(f"  📁 TXT:  {saved['txt']}")
+                print("=" * 65)
         sys.exit(0)
         
     # Direct single business search mode
@@ -742,14 +889,24 @@ def cli():
         display.section_header(f"DIRECT BUSINESS SCRAPE: {args.business}")
         lead = asyncio.run(_async_scrape_single_business(args.business, city=args.city, category=args.category, force_milli=force_milli))
         if lead:
-            from modules.local_exporter import print_lead_summary, export_to_csv, export_to_json
+            from modules.local_exporter import print_lead_summary, export_to_csv, export_to_json, export_to_txt, export_all_formats
             print_lead_summary(lead)
             if args.output:
                 if args.output.endswith('.csv'):
                     export_to_csv([lead], args.output)
+                elif args.output.endswith('.txt'):
+                    export_to_txt([lead], args.output)
                 else:
                     export_to_json([lead], args.output)
                 display.success(f"Lead saved to: {args.output}")
+            else:
+                saved = export_all_formats([lead])
+                print("\n" + "=" * 65)
+                print("  🎉 SUCCESS: Lead saved to all formats!")
+                print(f"  📁 CSV:  {saved['csv']}")
+                print(f"  📁 JSON: {saved['json']}")
+                print(f"  📁 TXT:  {saved['txt']}")
+                print("=" * 65)
         sys.exit(0)
 
     # Discovery mode

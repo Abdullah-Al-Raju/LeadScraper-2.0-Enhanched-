@@ -19,7 +19,7 @@
     <a href="#-10000-leads-mega-scale-benchmark-showdown">10k Leads Benchmark</a> •
     <a href="#-global-10000-restaurant-leads-dataset">Global 10k Dataset</a> •
     <a href="#-key-advanced-systems">Key Features</a> •
-    <a href="#-quick-start">Quick Start</a> •
+    <a href="#-quick-start-zero-code-interactive-wizard">Interactive Wizard</a> •
     <a href="#-how-it-works">How It Works</a> •
     <a href="#-cli-reference">CLI Reference</a> •
     <a href="#-featured-dataset-luxembourg-nationwide-700">Luxembourg 700</a> •
@@ -137,88 +137,140 @@ To verify real-world speed and reliability without triggering rate-limit conflic
 
 ---
 
-## ⚡ Quick Start
+## ⚡ Quick Start: Zero-Code Interactive Wizard
 
-### Prerequisites
-- **Python 3.8+** ([Download Python](https://www.python.org/downloads/))
-- Git
+LeadScraper Falcon is designed for **everyone**—from non-technical business operators to advanced data engineers. You do not need to memorize CLI arguments or write code.
 
-### Step 1: Clone & Install Dependencies
+### 🚀 1-Click Launchers (Windows, Linux & macOS)
 
-**On Linux / macOS:**
+Clone the repository and launch instantly with automated one-click scripts:
+
 ```bash
 git clone https://github.com/Abdullah-Al-Raju/lead-scraper-falcon.git
 cd lead-scraper-falcon
-
-python3 -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
-# Optional: Install Milli-Scrapes for sub-millisecond V8 hyper-reflex engine
-pip install git+https://github.com/Abdullah-Al-Raju/milli-scrapes.git
 ```
 
-**On Windows (PowerShell or Command Prompt):**
-```powershell
-git clone https://github.com/Abdullah-Al-Raju/lead-scraper-falcon.git
-cd lead-scraper-falcon
+- **On Windows**: Double-click `run.bat` or run in Command Prompt / PowerShell:
+  ```cmd
+  run.bat
+  ```
+- **On Linux / macOS**: Run `run.sh` in terminal:
+  ```bash
+  chmod +x run.sh && ./run.sh
+  ```
+*(The one-click launchers automatically verify Python 3.8+, create and activate a virtual environment, install all dependencies with the integrated core Milli Engine, and launch the interactive wizard immediately.)*
 
-python -m venv venv
-.\venv\Scripts\activate
+#### Or Manual Terminal Launch:
+```bash
+python3 -m venv venv && source venv/bin/activate   # On Windows: .\venv\Scripts\activate
 pip install -r requirements.txt
-# Optional: Install Milli-Scrapes for sub-millisecond V8 hyper-reflex engine
-pip install git+https://github.com/Abdullah-Al-Raju/milli-scrapes.git
+python main.py
+```
+*(Running `python main.py` with zero arguments automatically launches the interactive wizard!)*
+
+---
+
+### 🪄 The 3 Guided Extraction Templates
+
+Upon launch, you are greeted with the interactive menu:
+
+```
+=================================================================
+  🦅 LEADSCRAPER FALCON - ZERO-CODE INTERACTIVE WIZARD
+  Powered by Milli Universal V8 Engine (336x Faster than Firecrawl)
+=================================================================
+
+Choose an extraction template:
+  [1] Direct Website Extraction   (Scrape & enrich a specific website URL)
+  [2] Named Business Search       (Find & enrich a business by its name)
+  [3] Dynamic Discovery           (Find multiple businesses by location & category)
+  [q] Exit
+
+Select an option (1, 2, 3, or q): 
+```
+
+#### 🌐 Template 1: Direct Website Extraction
+- **Best For**: You have a specific business website URL and need verified contact details immediately.
+- **How it works**: Enter any website (e.g., `https://www.joscoffee.com`). Falcon deep crawls the site with Milli Universal Engine, resolves Cloudflare scrambled emails (`data-cfemail`), crawls internal `/contact` and `/about` subpages, and discovers all social handles (Facebook, Instagram, LinkedIn, Twitter/X, TikTok, YouTube).
+
+#### 🏢 Template 2: Named Business Search
+- **Best For**: You know the business name and optional city, but don't have their website or email.
+- **How it works**: Enter the business name (e.g., `Joe's Bakery` or `Philz Coffee`) and optional city (e.g., `Austin, TX`). Falcon automatically locates the official operating website, filters out 40+ directory aggregators (Yelp, TripAdvisor), and deep-enriches the lead.
+
+#### 🎯 Template 3: Dynamic Regional Discovery
+- **Best For**: Generating new qualified leads in any city, country, or niche in the world.
+- **How it works**:
+  1. Enter target location / city / country (e.g., `Austin, TX` or `London, UK`).
+  2. Enter business category or niche (e.g., `coffee shop`, `plumber`, `dentist`, `boutique`).
+  3. Enter desired quantity of leads (e.g., `10` or `50`).
+  Falcon autonomously queries search matrices, filters out aggregators, and runs parallel Milli crawls to extract fully enriched leads with confidence scores.
+
+---
+
+### 💾 Zero Decision Burden: Automatic Multi-Format Saving
+
+You don't need to choose output formats or configure export flags. Every run automatically saves your leads simultaneously to all 3 industry-standard formats inside the `output/` directory:
+
+| Format | File Path | Use Case |
+|---|---|---|
+| **CSV** | `output/leads_<timestamp>.csv` | Open directly in **Microsoft Excel**, **Google Sheets**, or import to **CRMs** (HubSpot, Salesforce, Apollo) |
+| **JSON** | `output/leads_<timestamp>.json` | Full structured metadata, raw API payloads, source corroboration, and confidence scores for developers |
+| **TXT** | `output/leads_<timestamp>.txt` | Clean, human-readable lead report cards for quick team reading and executive summaries |
+
+The tool prints the exact absolute file paths right in your console as soon as extraction finishes:
+```
+=================================================================
+  🎉 SUCCESS: All leads saved locally in 3 formats!
+  📁 CSV:  /path/to/lead-scraper-falcon/output/leads_20261027_153000.csv
+  📁 JSON: /path/to/lead-scraper-falcon/output/leads_20261027_153000.json
+  📁 TXT:  /path/to/lead-scraper-falcon/output/leads_20261027_153000.txt
+=================================================================
 ```
 
 ---
 
-### Step 2: Choose Your Execution Mode
+### ⚙️ Advanced Execution Modes (For Developers & Power Users)
 
-#### 🟢 Option A: 100% Local Standalone Mode (Zero API Keys & $0.00 Cost)
-Run instantly without any external API accounts or keys:
+For headless CI/CD, scheduled cron jobs, or batch pipelines, you can run LeadScraper Falcon directly via command-line arguments:
 
+#### 🟢 1. Local CLI Standalone Mode (Zero API Keys & $0.00 Cost)
 ```bash
-# 1. Scrape and enrich a single website directly with Milli Engine:
+# Direct website extraction:
 python3 main.py --url "https://kaempff-kohler.lu" --local --output output/single_lead.json
 
-# 2. Search and enrich a specific business by name:
+# Named business search:
 python3 main.py --business "Philz Coffee" --city "San Francisco" --local --output output/coffee.csv
 
-# 3. Discover businesses in any city and export directly to CSV:
+# Autonomous dynamic discovery:
 python3 main.py --discover "Austin, TX" --quantity 10 --category "coffee" --local --output output/austin_coffee.csv
 ```
 
-#### 🔵 Option B: Google Sheets Cloud Pipeline Mode
-For real-time streaming directly into your team's Google Sheet:
-
+#### 🔵 2. Google Sheets Cloud Pipeline Mode
+For real-time streaming directly into your team's live Google Sheet:
 1. **Set Up Google Sheets API**:
-   - Go to [Google Cloud Console](https://console.cloud.google.com/) and enable **Google Sheets API** & **Google Drive API**.
-   - Create a Service Account and download the key as `credentials/service_account.json`.
-   - Share your Google Sheet with the `client_email` listed in the JSON file.
-2. **Set Environment Variables**:
+   - Enable **Google Sheets API** & **Google Drive API** in Google Cloud Console.
+   - Create a Service Account, save credentials to `credentials/service_account.json`, and share your Sheet with the service account email.
+2. **Configure `.env`**:
    ```bash
    cp .env.example .env
    ```
-   Add your Google Sheet credentials to `.env`:
+   Add your Google Sheet ID:
    ```env
    GOOGLE_SHEET_ID=your-google-sheet-id-from-url
    SERVICE_ACCOUNT_FILE=credentials/service_account.json
    ```
-3. **Launch Pipeline**:
+3. **Launch Streaming Pipeline**:
    ```bash
    python3 main.py --discover "SoHo, New York" --quantity 25 --category "boutique"
    ```
 
-#### 🟣 Option C: Optional OpenRouter Free AI Auto-Router Tier
-For users who do not use automated AI coding agents and want optional AI-assisted extraction and discovery:
-LeadScraper includes an optional integration with OpenRouter's free tier:
-- **Free Auto-Router (`openrouter/free`)**: Dynamically routes prompts to currently available zero-cost models.
-- **Server-Side Fallback Array**: Automatically fails over across free models (`meta-llama/llama-3.3-70b-instruct:free`, `google/gemini-2.0-flash-exp:free`, `qwen/qwen-2.5-72b-instruct:free`, `mistralai/mistral-7b-instruct:free`) on rate limits or outages without manual intervention.
-- **How to use**:
-  1. Obtain a free API key at [openrouter.ai/keys](https://openrouter.ai/keys).
-  2. Add it to `.env`:
-     ```env
-     OPENROUTER_API_KEY=sk-or-v1-your-key-here
-     ```
-  3. Run any scrape command normally. LeadScraper uses fast deterministic parsing first and queries free models only if contacts are sparse. You can also force AI mode with `--ai` or disable it with `--no-ai`.
+#### 🟣 3. Optional OpenRouter Free AI Auto-Router Tier
+LeadScraper Falcon is **100% deterministic and zero-cost by default**. If you wish to enable optional AI-assisted extraction for deeply unstructured pages:
+- Add your free OpenRouter API key to `.env`:
+  ```env
+  OPENROUTER_API_KEY=sk-or-v1-your-key-here
+  ```
+- LeadScraper will automatically use free models (`openrouter/free`) as a secondary fallback if deterministic extraction detects sparse fields. You can also explicitly control AI mode with `--ai` or `--no-ai`.
 
 ---
 
@@ -311,12 +363,14 @@ python3 scripts/scrape_luxembourg_restaurants.py
 
 ```
 lead-scraper-falcon/
+├── run.bat                                 ← 1-Click zero-code launcher for Windows
+├── run.sh                                  ← 1-Click zero-code launcher for Linux/macOS
 ├── .env.example                            ← Configuration template
 ├── .gitignore                              ← Protects secrets & caches
-├── main.py                                 ← CLI entry point & orchestrator
+├── main.py                                 ← CLI entry point & orchestrator (Interactive Wizard)
 ├── config.py                               ← Engine parameters & host limits
 ├── cap.py                                  ← Terminal capture & logging wrapper
-├── requirements.txt                        ← Core dependencies
+├── requirements.txt                        ← Core dependencies & integrated Milli Engine
 ├── README.md                               ← Documentation & benchmark reports
 │
 ├── scripts/

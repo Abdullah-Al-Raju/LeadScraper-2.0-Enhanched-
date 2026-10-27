@@ -111,6 +111,80 @@ def export_to_json(leads: List[Dict[str, Any]], filepath: str) -> str:
     return filepath
 
 
+def export_to_txt(leads: List[Dict[str, Any]], filepath: str) -> str:
+    """Exports leads to a clean, human-readable text report."""
+    os.makedirs(os.path.dirname(os.path.abspath(filepath)), exist_ok=True)
+    rows = [format_lead_row(lead) for lead in leads]
+    
+    lines = [
+        "=" * 70,
+        "  LEADSCRAPER FALCON - VERIFIED LEADS REPORT",
+        f"  Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} | Total Leads: {len(rows)}",
+        "=" * 70,
+        ""
+    ]
+    
+    for i, row in enumerate(rows, 1):
+        lines.append(f"[{i}] {row['business_name'] or 'Unknown Business'}")
+        if row['website']:
+            lines.append(f"    Website:    {row['website']}")
+        if row['phone_numbers']:
+            lines.append(f"    Phone:      {row['phone_numbers']}")
+        if row['email_addresses']:
+            lines.append(f"    Email:      {row['email_addresses']}")
+        if row['street_address'] or row['city']:
+            loc_str = f"{row['street_address']} {row['city']} {row['state']}".strip()
+            lines.append(f"    Address:    {loc_str}")
+        
+        socials = []
+        if row['facebook']: socials.append(f"Facebook: {row['facebook']}")
+        if row['instagram']: socials.append(f"Instagram: {row['instagram']}")
+        if row['linkedin']: socials.append(f"LinkedIn: {row['linkedin']}")
+        if row['twitter']: socials.append(f"X: {row['twitter']}")
+        for s in socials:
+            lines.append(f"    {s}")
+            
+        lines.append(f"    Confidence: {row['confidence_score']}% (Verified from: {row['sources_used']})")
+        lines.append("-" * 70)
+        lines.append("")
+        
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write("\n".join(lines))
+        
+    logger.info(f"Successfully exported {len(rows)} leads to TXT: {filepath}")
+    return filepath
+
+
+def export_all_formats(leads: List[Dict[str, Any]], base_name: str = None) -> Dict[str, str]:
+    """
+    Saves leads simultaneously to all 3 accessible formats:
+    - CSV (for Excel / Google Sheets)
+    - JSON (for developers & CRMs)
+    - TXT (clean human-readable report)
+    Returns dictionary with absolute paths to each file.
+    """
+    os.makedirs("output", exist_ok=True)
+    if not base_name:
+        stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        base_name = f"leads_{stamp}"
+    elif base_name.endswith(('.csv', '.json', '.txt')):
+        base_name = os.path.splitext(base_name)[0]
+        
+    csv_path = os.path.join("output", f"{os.path.basename(base_name)}.csv")
+    json_path = os.path.join("output", f"{os.path.basename(base_name)}.json")
+    txt_path = os.path.join("output", f"{os.path.basename(base_name)}.txt")
+    
+    export_to_csv(leads, csv_path)
+    export_to_json(leads, json_path)
+    export_to_txt(leads, txt_path)
+    
+    return {
+        'csv': os.path.abspath(csv_path),
+        'json': os.path.abspath(json_path),
+        'txt': os.path.abspath(txt_path)
+    }
+
+
 def print_lead_summary(lead: Dict[str, Any]):
     """Pretty prints lead details to the console."""
     row = format_lead_row(lead)

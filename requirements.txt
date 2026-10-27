@@ -11,4 +11,5 @@ pydantic>=2.0.0
 rich>=13.0.0
 pytest>=7.0.0
 pytest-asyncio>=0.21.0
+milli-scrapes @ git+https://github.com/Abdullah-Al-Raju/milli-scrapes.git
 
