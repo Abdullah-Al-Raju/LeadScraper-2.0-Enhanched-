@@ -1,45 +1,35 @@
 ---
 name: lead-scraper-falcon
-description: Autonomous business intelligence, lead generation, and contact extraction engine. Discovers operating businesses, filters out 40+ directory aggregators, deobfuscates Cloudflare protected emails, deep-crawls European Impressum subpages, harvests social media endpoints (Instagram, Facebook, X, LinkedIn, TikTok), and fuses multi-source data with Bayesian confidence scoring at $0.00 compute cost.
+description: Autonomous business intelligence, lead generation, and contact extraction engine powered natively by Milli-Scrapes. Discovers operating businesses, filters out 40+ directory aggregators, bypasses Cloudflare Turnstile and cookie walls in sub-milliseconds, harvests emails, phones, social handles (Instagram, Facebook, X, LinkedIn, TikTok), and automatically exports to CSV, JSON, and formatted TXT cards.
 ---
 
 # LeadScraper Falcon Agent Skill
 
 Use this skill whenever an autonomous agent, multi-agent workflow, or user needs to:
-1. **Find and verify businesses** in any city, country, or industry niche (e.g. coffee shops in Austin, dental clinics in London, fine dining in Tokyo).
-2. **Scrape official business websites** and bypass Cloudflare Turnstile, anti-bot gates, and cookie consent banners.
-3. **Deobfuscate scrambled emails** protected by Cloudflare `data-cfemail` or `/cdn-cgi/l/email-protection#...` without human intervention.
-4. **Discover hidden European emails** legally published on `/contact`, `/kontakt`, `/impressum`, or `/mentions-legales` subpages.
-5. **Harvest social media endpoints** (Instagram, Facebook, X/Twitter, LinkedIn, TikTok, YouTube, WhatsApp).
-6. **Fuse multi-source records** with automated Bayesian-weighted confidence scoring (0–100%) and export to clean CSV/JSON or stream into Google Sheets.
+1. **Extract leads from a direct website URL** (0 searches, instant Milli crawl).
+2. **Find verified contacts for a named business** (1 targeted official website lookup).
+3. **Discover operating businesses dynamically** by category and location anywhere in the world.
+4. **Auto-dismiss cookie walls & bypass Cloudflare Turnstile** with zero-second stall loops.
+5. **Harvest comprehensive social media endpoints** (Instagram, Facebook, X/Twitter, LinkedIn, TikTok, YouTube).
+6. **Automatically export leads to JSON, CSV, and TXT** in the `output/` folder.
 
 ---
 
 ## 1. CLI Command Quick Reference
 
-### Direct Website Scraping & Contact Extraction
+### Template 1: Direct Website Extraction (0 searches)
 ```bash
-python main.py --url "https://kaempff-kohler.lu" --local --output output/single_lead.json
+python main.py --url "https://bluebottlecoffee.com"
 ```
 
-### Business Name Search & Enrichment
+### Template 2: Named Business Search (1 targeted search)
 ```bash
-python main.py --business "Philz Coffee" --city "San Francisco" --category "coffee" --local --output output/coffee.csv
+python main.py --name "Tartine Bakery" --location "San Francisco"
 ```
 
-### Geographic Discovery & Lead Generation
+### Template 3: Dynamic Category & Location Discovery
 ```bash
-python main.py --discover "Austin, TX" --quantity 25 --category "coffee" --local --output output/austin_coffee.csv
-```
-
-### Google Sheets Cloud Pipeline Mode
-```bash
-python main.py --discover "SoHo, New York" --quantity 50 --category "boutique"
-```
-
-### Force Fallback HTTPX (Disable Milli Engine)
-```bash
-python main.py --url "https://example.com" --no-milli --local --output output/lead.json
+python main.py --category "Dentist" --location "Austin, TX" --quantity 10
 ```
 
 ---
@@ -48,112 +38,48 @@ python main.py --url "https://example.com" --no-milli --local --output output/le
 
 | Flag | Type | Default | Description | Example |
 | :--- | :--- | :--- | :--- | :--- |
-| `--url` | String | `None` | Direct URL mode: scrape and extract contacts from a single site | `--url "https://kaempff-kohler.lu"` |
-| `--business` | String | `None` | Search for a specific business by name | `--business "Tartine Bakery"` |
-| `--city` | String | `None` | Geographic city hint for `--business` search | `--city "San Francisco"` |
-| `--discover` | String | `None` | Target city/region to discover businesses | `--discover "Melbourne, Australia"` |
-| `--category` | String | `""` | Business category or niche filter | `--category "restaurants"` |
-| `--quantity` | Integer | `10` | Number of businesses to discover and extract | `--quantity 50` |
-| `--local` | Flag | `False` | Run in 100% standalone mode ($0 cost, no Sheets required) | `--local` |
-| `--output` | String | `None` | Destination filepath (`.csv` or `.json`) | `--output output/leads.csv` |
-| `--no-milli` | Flag | `False` | Disable Milli V8 engine and use fallback HTTPX | `--no-milli` |
-| `--ai` | Flag | `False` | Force enable OpenRouter AI free auto-router tier | `--ai` |
-| `--no-ai` | Flag | `False` | Disable AI tier even if OPENROUTER_API_KEY is configured | `--no-ai` |
+| `--url` | String | `None` | Template 1: Direct website extraction | `--url "https://bluebottlecoffee.com"` |
+| `--name` | String | `None` | Template 2: Business name to lookup | `--name "Tartine Bakery"` |
+| `--location` | String | `None` | Target location / city / country | `--location "San Francisco"` |
+| `--category` | String | `None` | Template 3: Business category or niche | `--category "Coffee Roasters"` |
+| `--quantity` | Integer | `10` | Number of leads to extract in discovery | `--quantity 20` |
+| `--concurrency` | Integer | `5` | Concurrent worker tasks | `--concurrency 8` |
 
 ---
 
-## 3. Python API Integration
+## 3. Python Programmatic API
 
-### Direct Single Website Extraction
 ```python
 import asyncio
-from modules.crawler import crawl_website
-from modules.extractor import extract_contacts
+from lead_scraper import LeadScraper, export_leads
 
-async def get_lead_from_website(url: str) -> dict:
-    # Deep crawl homepage and contact/impressum subpages with Milli V8 engine
-    crawl_data = await crawl_website(url, force_milli=True)
-    if not crawl_data:
-        return {"error": "Crawl failed"}
-    
-    # Extract contacts (Cloudflare deobfuscation + regex + JSON-LD + social media)
-    contacts = extract_contacts(crawl_data)
-    return contacts
+async def main():
+    async with LeadScraper() as scraper:
+        # Template 1
+        lead = await scraper.scrape_website("https://news.ycombinator.com")
+        print(lead.display_card())
 
-# Run
-data = asyncio.run(get_lead_from_website("https://kaempff-kohler.lu"))
-print(data["email_addresses"])
-print(data["instagram"])
-```
+        # Template 2
+        lead2 = await scraper.scrape_named_business("Tartine Bakery", location="San Francisco")
+        print(lead2.emails, lead2.phones)
 
-### Multi-Source Data Fusion & Confidence Scoring
-```python
-from modules.fusion import fuse_lead_sources
+        # Template 3
+        leads = await scraper.discover_and_scrape(
+            category="Dentist",
+            location="Austin, TX",
+            quantity=10
+        )
+        paths = export_leads(leads)
+        print("Exported to:", paths)
 
-sources = {
-    "website": {
-        "business_name": "Philz Coffee",
-        "email_addresses": ["info@philzcoffee.com"],
-        "phone_numbers": ["(415) 875-9943"],
-        "instagram": "https://instagram.com/philzcoffee",
-        "facebook": "https://facebook.com/philzcoffee"
-    },
-    "search_snippets": {
-        "business_name": "Philz Coffee",
-        "street_address": "3101 24th St",
-        "city": "San Francisco",
-        "state_region": "CA"
-    }
-}
-
-fused_record = fuse_lead_sources(sources)
-print(f"Confidence Score: {fused_record['confidence_score']}%")
+asyncio.run(main())
 ```
 
 ---
 
-## 4. Environment Configuration (`.env`)
+## 4. Automatic Multi-Format Output
 
-For **100% Local Mode (`--local`)**, no API keys or environment variables are required!
-
-For **Optional Integrations**, configure `.env`:
-```env
-# Optional: OpenRouter Free Auto-Router (Zero-cost AI extraction & discovery)
-OPENROUTER_API_KEY=sk-or-v1-your-key-here
-
-# Optional: Google Cloud Service Account for Sheets integration
-GOOGLE_SHEET_ID=your-google-sheet-id-from-url
-SERVICE_ACCOUNT_FILE=credentials/service_account.json
-```
-
----
-
-## 5. Output Data Schema
-
-When saving to JSON, each lead object adheres to:
-
-```json
-{
-  "business_name": "Restaurant Name",
-  "category": "Cuisine or Industry",
-  "website": "https://official-website.com",
-  "email_addresses": ["contact@domain.com"],
-  "phone_numbers": ["+1 555-123-4567"],
-  "street_address": "123 Main Street",
-  "city": "City Name",
-  "state_region": "State / Canton",
-  "postal_code": "ZIP / Postal Code",
-  "country": "Country Name",
-  "social_media": {
-    "instagram": "https://instagram.com/handle",
-    "facebook": "https://facebook.com/handle",
-    "twitter": "https://x.com/handle",
-    "linkedin": "https://linkedin.com/company/handle",
-    "tiktok": null,
-    "youtube": null,
-    "whatsapp": null
-  },
-  "confidence_score": 85.0,
-  "sources_corroborated": ["official_website", "json_ld_schema", "search_snippets"]
-}
-```
+Every run writes to `output/`:
+- `output/leads_<timestamp>.json` (Structured JSON records)
+- `output/leads_<timestamp>.csv` (Tabular spreadsheet UTF-8 with BOM)
+- `output/leads_<timestamp>.txt` (Formatted business cards)

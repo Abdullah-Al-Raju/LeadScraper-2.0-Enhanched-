@@ -5,9 +5,9 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "lead-scraper-falcon"
 version = "2.0.0"
-description = "Autonomous, high-speed multi-source lead scraping and enrichment engine"
+description = "Pure Milli-First high-speed business lead collection engine"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
     { name = "Abdullah Al Raju" }
@@ -20,17 +20,14 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "requests>=2.31.0",
     "beautifulsoup4>=4.12.0",
     "lxml>=4.9.0",
-    "gspread>=5.12.0",
-    "google-auth>=2.23.0",
-    "google-auth-oauthlib>=1.1.0",
     "ddgs>=9.0.0",
-    "python-dotenv>=1.0.0",
+    "duckduckgo-search>=6.0.0",
     "httpx>=0.25.0",
     "pydantic>=2.0.0",
     "rich>=13.0.0",
+    "milli-scrapes @ git+https://github.com/Abdullah-Al-Raju/milli-scrapes.git",
 ]
 
 [project.optional-dependencies]
@@ -40,12 +37,12 @@ dev = [
 ]
 
 [project.scripts]
-lead-scraper-falcon = "main:cli"
-lead-scraper = "main:cli"
+lead-scraper-falcon = "main:main"
+lead-scraper = "main:main"
 
 [tool.setuptools]
-py-modules = ["main", "config"]
+py-modules = ["main"]
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["modules*"]
+include = ["lead_scraper*"]
