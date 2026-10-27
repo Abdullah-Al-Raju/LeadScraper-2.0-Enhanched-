@@ -92,6 +92,20 @@ def extract_contacts(crawl_data, category=None):
     # Add website
     if not contacts.get('website'):
         contacts['website'] = crawl_data.get('homepage_url')
+        
+    # Resolve business_name if still missing
+    if not contacts.get('business_name'):
+        title = crawl_data.get('title') or ""
+        if title:
+            parts = re.split(r'\s+[-–—]\s+|\s*[|:•]\s*', title)
+            clean_name = parts[0].strip() if parts else title.strip()
+            if len(clean_name) >= 2 and len(clean_name) <= 50:
+                contacts['business_name'] = clean_name
+    if not contacts.get('business_name') and contacts.get('website'):
+        from urllib.parse import urlparse
+        domain = urlparse(contacts['website']).netloc.replace('www.', '').split('.')[0]
+        if domain:
+            contacts['business_name'] = domain.replace('-', ' ').title()
     
     return contacts
 
@@ -238,6 +252,7 @@ def extract_with_regex(text, mailto_links=None, tel_links=None):
         if len(contacts['email_addresses']) >= max_emails:
             break
         email = match.group(0).lower().strip().rstrip('.,;:!?)>"\'')
+        email = re.sub(r'(phone(?:number)?|tel|email|address|contact|website|hours|mon|tue|wed|thu|fri|sat|sun)$', '', email, flags=re.IGNORECASE).rstrip('.,;:!?)>"\'')
         if is_valid_email(email) and email not in [e.lower() for e in contacts['email_addresses']]:
             contacts['email_addresses'].append(email)
     
@@ -247,6 +262,7 @@ def extract_with_regex(text, mailto_links=None, tel_links=None):
             if len(contacts['email_addresses']) >= max_emails:
                 break
             clean_email = email.lower().strip().rstrip('.,;:!?)>"\'')
+            clean_email = re.sub(r'(phone(?:number)?|tel|email|address|contact|website|hours|mon|tue|wed|thu|fri|sat|sun)$', '', clean_email, flags=re.IGNORECASE).rstrip('.,;:!?)>"\'')
             if is_valid_email(clean_email) and clean_email not in [e.lower() for e in contacts['email_addresses']]:
                 contacts['email_addresses'].append(clean_email)
     

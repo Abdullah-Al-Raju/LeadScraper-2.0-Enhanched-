@@ -571,6 +571,7 @@ def parse_args():
 
 async def _async_scrape_direct_url(url: str, category: str = "", force_milli: bool = True):
     from urllib.parse import urlparse
+    import re
     from modules.crawler import crawl_website
     from modules.extractor import extract_contacts
     from modules.utils import calculate_completeness
@@ -581,7 +582,19 @@ async def _async_scrape_direct_url(url: str, category: str = "", force_milli: bo
         
     contacts = extract_contacts(crawl_data, category=category) or {}
     contacts['website'] = url
-    domain_name = urlparse(url).netloc.replace('www.', '').split('.')[0].title()
+    
+    # Resolve business name from page title or domain
+    if not contacts.get('business_name'):
+        title = crawl_data.get('title') or ""
+        if title:
+            parts = re.split(r'\s+[-–—]\s+|\s*[|:•]\s*', title)
+            clean_name = parts[0].strip() if parts else title.strip()
+            if len(clean_name) >= 2 and len(clean_name) <= 50:
+                contacts['business_name'] = clean_name
+    if not contacts.get('business_name'):
+        domain_name = urlparse(url).netloc.replace('www.', '').split('.')[0]
+        contacts['business_name'] = domain_name.replace('-', ' ').title()
+
     comp = calculate_completeness(contacts)
     contacts['completeness_score'] = comp
     contacts['confidence_score'] = int(comp * 100) if comp <= 1.0 else int(comp)
@@ -589,63 +602,105 @@ async def _async_scrape_direct_url(url: str, category: str = "", force_milli: bo
     return contacts
 
 
-async def _async_scrape_single_business(business_name: str, city: str = "", category: str = "", force_milli: bool = True):
+async def _async_scrape_single_business(
+    business_name: str,
+    city: str = "",
+    category: str = "",
+    website_url: str = None,
+    force_milli: bool = True
+):
     from modules.search import search_for_website
-    from modules.sources.search_result_extractor import extract_from_search_results, extract_from_social_search
-    from modules.fusion import merge_multi_source_data
     from modules.crawler import crawl_website
     from modules.extractor import extract_contacts
     from modules.utils import calculate_completeness
     
-    loop = asyncio.get_event_loop()
-    sources_data = []
-    website_url = None
-    
-    # 1. Search snippet extraction (captures snippets, phone, email, address, and official site)
-    try:
-        search_contacts = await loop.run_in_executor(None, extract_from_search_results, business_name, city, category)
-        if search_contacts:
-            sources_data.append(search_contacts)
-            if search_contacts.get('website'):
-                website_url = search_contacts['website']
-    except Exception as e:
-        logger.debug(f"Search snippet extraction: {e}")
-        
-    # 2. Search for official website only if not found in snippets
-    if not website_url:
-        display.info(f"Searching official website for: {business_name} ({city})...")
-        website_url = await search_for_website(business_name, city)
-        
-    # 3. Crawl website with Milli
+    # 1. MILLI-FIRST: If website_url is already known, directly crawl with Milli! (0 search queries)
     if website_url:
-        display.info(f"Found website: {website_url}. Crawling with Milli...")
+        logger.info(f"Milli-First: Crawling official website {website_url}...")
         crawl_data = await crawl_website(website_url, force_milli=force_milli)
         if crawl_data:
             contacts = extract_contacts(crawl_data, category=category) or {}
-            contacts['source_type'] = 'website'
+            contacts['business_name'] = contacts.get('business_name') or business_name
+            contacts['city'] = city
+            contacts['category'] = category
             contacts['website'] = website_url
-            sources_data.append(contacts)
-            
-    # 4. Social search (Facebook) only if not already discovered
-    if not any(s.get('facebook') for s in sources_data):
-        try:
-            fb_contacts = await loop.run_in_executor(None, extract_from_social_search, business_name, city, 'facebook')
-            if fb_contacts:
-                sources_data.append(fb_contacts)
-        except Exception:
-            pass
-            
-    if not sources_data:
-        return {'business_name': business_name, 'city': city, 'confidence_score': 0}
+            comp = calculate_completeness(contacts)
+            contacts['completeness_score'] = comp
+            contacts['confidence_score'] = int(comp * 100) if comp <= 1.0 else int(comp)
+            contacts['sources_used'] = [crawl_data.get('engine_used', 'milli_universal')]
+            return contacts
+
+    # 2. TARGETED SITE LOCATOR: Exactly 1 fast search if website was not provided
+    if not website_url and business_name:
+        display.info(f"Locating official site: {business_name} ({city})...")
+        website_url = await search_for_website(business_name, city)
         
-    merged = merge_multi_source_data(sources_data)
-    merged['business_name'] = business_name
-    merged['city'] = city
-    merged['category'] = category
-    if website_url and not merged.get('website'):
-        merged['website'] = website_url
-    merged['completeness_score'] = calculate_completeness(merged)
-    return merged
+    if website_url:
+        display.info(f"Found official site: {website_url}. Crawling with Milli...")
+        crawl_data = await crawl_website(website_url, force_milli=force_milli)
+        if crawl_data:
+            contacts = extract_contacts(crawl_data, category=category) or {}
+            contacts['business_name'] = contacts.get('business_name') or business_name
+            contacts['city'] = city
+            contacts['category'] = category
+            contacts['website'] = website_url
+            comp = calculate_completeness(contacts)
+            contacts['completeness_score'] = comp
+            contacts['confidence_score'] = int(comp * 100) if comp <= 1.0 else int(comp)
+            contacts['sources_used'] = [crawl_data.get('engine_used', 'milli_universal')]
+            return contacts
+
+    # 3. FALLBACK ONLY: If no website could be reached or found, extract snippet info
+    loop = asyncio.get_event_loop()
+    try:
+        from modules.sources.search_result_extractor import extract_from_search_results
+        search_contacts = await loop.run_in_executor(None, extract_from_search_results, business_name, city, category)
+        if search_contacts:
+            search_contacts['business_name'] = business_name
+            search_contacts['city'] = city
+            search_contacts['category'] = category
+            comp = calculate_completeness(search_contacts)
+            search_contacts['completeness_score'] = comp
+            search_contacts['confidence_score'] = int(comp * 100) if comp <= 1.0 else int(comp)
+            return search_contacts
+    except Exception as e:
+        logger.debug(f"Snippet search fallback: {e}")
+        
+    return {
+        'business_name': business_name,
+        'city': city,
+        'category': category,
+        'confidence_score': 0,
+        'completeness_score': 0
+    }
+
+
+async def _async_scrape_batch(businesses, category: str = "", location: str = "", force_milli: bool = True):
+    """Crawls a batch of discovered businesses concurrently using Milli with polite concurrency."""
+    from modules.local_exporter import print_lead_summary
+    sem = asyncio.Semaphore(5)
+    leads = []
+    
+    async def _worker(idx, item):
+        async with sem:
+            name = item.get('name') or item.get('business_name') or item.get('search_term')
+            b_city = item.get('city') or item.get('location') or location
+            b_site = item.get('website')
+            display.info(f"[{idx}/{len(businesses)}] Milli crawling: {name} ({b_site or b_city})")
+            lead = await _async_scrape_single_business(
+                name, city=b_city, category=category, website_url=b_site, force_milli=force_milli
+            )
+            return lead
+
+    tasks = [_worker(i, item) for i, item in enumerate(businesses, 1)]
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+    
+    for r in results:
+        if r and not isinstance(r, Exception):
+            leads.append(r)
+            print_lead_summary(r)
+            
+    return leads
 
 
 def run_cli_discovery(location, quantity, category, local_mode=False, output_file=None, force_milli=True):
@@ -667,18 +722,8 @@ def run_cli_discovery(location, quantity, category, local_mode=False, output_fil
     display.success(f"Discovered {len(businesses)} businesses!")
 
     if local_mode or output_file:
-        display.info("Running local extraction with Milli...")
-        leads = []
-        for idx, item in enumerate(businesses, 1):
-            name = item.get('name') or item.get('business_name') or item.get('search_term')
-            city = item.get('city') or location
-            display.info(f"[{idx}/{len(businesses)}] Processing: {name} ({city})")
-            lead = asyncio.run(_async_scrape_single_business(name, city=city, category=category, force_milli=force_milli))
-            if lead:
-                leads.append(lead)
-                print_lead_summary(lead)
-            if idx < len(businesses):
-                time.sleep(1.0)
+        display.info("Running parallel extraction with Milli...")
+        leads = asyncio.run(_async_scrape_batch(businesses, category=category, location=location, force_milli=force_milli))
                 
         if output_file:
             if output_file.endswith('.csv'):
@@ -810,17 +855,8 @@ def interactive_menu():
             display.error("Discovery failed - no businesses found")
             return
 
-        display.success(f"Discovered {len(discovered)} businesses! Processing with Milli...")
-        for idx, item in enumerate(discovered, 1):
-            name = item.get('name') or item.get('business_name') or item.get('search_term')
-            b_city = item.get('city') or location
-            display.info(f"[{idx}/{len(discovered)}] Processing: {name} ({b_city})")
-            lead = asyncio.run(_async_scrape_single_business(name, city=b_city, category=category, force_milli=True))
-            if lead:
-                leads.append(lead)
-                print_lead_summary(lead)
-            if idx < len(discovered):
-                time.sleep(1.0)
+        display.success(f"Discovered {len(discovered)} businesses! Processing with Milli in parallel...")
+        leads = asyncio.run(_async_scrape_batch(discovered, category=category, location=location, force_milli=True))
 
     if leads:
         saved = export_all_formats(leads)

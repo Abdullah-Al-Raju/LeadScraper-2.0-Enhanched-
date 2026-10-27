@@ -205,6 +205,7 @@ def _extract_emails(text, data):
     for pattern in EMAIL_PATTERNS:
         for match in re.finditer(pattern, text):
             email = match.group(0).rstrip('.,;:!?)>"\'')
+            email = re.sub(r'(phone(?:number)?|tel|email|address|contact|website|hours|mon|tue|wed|thu|fri|sat|sun)$', '', email, flags=re.IGNORECASE).rstrip('.,;:!?)>"\'')
             if is_valid_email(email) and email not in data['email_addresses']:
                 if len(data['email_addresses']) < config.MAX_EMAILS_PER_BUSINESS:
                     data['email_addresses'].append(email)

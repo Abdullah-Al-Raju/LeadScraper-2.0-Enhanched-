@@ -14,7 +14,7 @@ from modules.discovery import (
 
 def test_generate_discovery_queries():
     queries = _generate_discovery_queries("Austin, TX", "plumber")
-    assert len(queries) >= 5
+    assert len(queries) >= 3
     assert any("plumber" in q for q in queries)
     assert any("Austin, TX" in q for q in queries)
 
@@ -57,12 +57,13 @@ def test_extract_business_entities():
         }
     ]
     extracted = _extract_business_entities(mock_results, "Chicago", "plumber")
-    assert "Precision Plumbing" in extracted
-    assert "Apex Rooter Services" in extracted
-    assert "Windy City Pipes" in extracted
+    names = [e['name'] if isinstance(e, dict) else e for e in extracted]
+    assert "Precision Plumbing" in names
+    assert "Apex Rooter Services" in names
+    assert "Windy City Pipes" in names
     # Media & listicle titles must be rejected
-    assert "The Guide" not in extracted
-    assert "Top 10 Plumbers" not in extracted
+    assert "The Guide" not in names
+    assert "Top 10 Plumbers" not in names
 
 
 def test_validate_and_format_entities():

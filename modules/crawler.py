@@ -114,12 +114,22 @@ async def _crawl_with_milli(url: str, max_contact_pages: int = 2) -> Optional[Di
         html = res.get("html") or res.get("metadata", {}).get("raw_html", "")
         markdown = res.get("markdown", "")
         
-        # Check if WAF blocked or access denied
+        # Check if WAF blocked or access denied - escalate to optical browser Turnstile solver
         if is_waf_blocked(html, markdown):
-            logger.warning(f"WAF or Access Denied detected on {url}. Bypassing invalid content.")
-            return None
+            logger.info(f"WAF or Challenge detected on {url}. Escalating to Milli Optical Browser with Turnstile solver...")
+            try:
+                res = await scraper.scrape_url(url, force_browser=True)
+                html = res.get("html") or res.get("metadata", {}).get("raw_html", "")
+                markdown = res.get("markdown", "")
+            except Exception as esc_err:
+                logger.debug(f"Optical browser escalation error: {esc_err}")
+                return None
+            if is_waf_blocked(html, markdown):
+                logger.warning(f"Target {url} remained protected after browser escalation.")
+                return None
         
         soup = BeautifulSoup(html, 'lxml') if html else None
+        page_title = res.get('title') or (soup.title.get_text(strip=True) if soup and soup.title else "")
         
         mailto_links = _extract_mailto_links(soup) if soup else []
         tel_links = _extract_tel_links(soup) if soup else []
@@ -141,6 +151,7 @@ async def _crawl_with_milli(url: str, max_contact_pages: int = 2) -> Optional[Di
             
         crawl_data = {
             'homepage_url': url,
+            'title': page_title,
             'homepage_html': html,
             'homepage_text': markdown if markdown else (extract_visible_text(soup) if soup else ""),
             'contact_pages': [],
@@ -243,8 +254,10 @@ async def _crawl_with_httpx_fallback(url: str) -> Optional[Dict[str, Any]]:
         if not homepage_data:
             return None
         
+        page_title = homepage_data['soup'].title.get_text(strip=True) if homepage_data.get('soup') and homepage_data['soup'].title else ""
         crawl_data = {
             'homepage_url': url,
+            'title': page_title,
             'homepage_html': homepage_data['html'],
             'homepage_text': homepage_data['text'],
             'contact_pages': [],
