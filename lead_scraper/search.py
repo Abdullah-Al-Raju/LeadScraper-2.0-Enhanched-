@@ -28,7 +28,12 @@ def is_aggregator(url: str) -> bool:
     domain = extract_domain(url)
     if not domain:
         return True
-    return any(domain == agg or domain.endswith("." + agg) for agg in AGGREGATOR_DOMAINS)
+    if any(domain == agg or domain.endswith("." + agg) for agg in AGGREGATOR_DOMAINS):
+        return True
+    # Heuristics for generic aggregator/directory domain names
+    if any(term in domain for term in ["directory", "nearme", "roasterfinder", "restaurantfinder"]):
+        return True
+    return False
 
 
 def search_duckduckgo(query: str, max_results: int = 10) -> List[Dict[str, str]]:

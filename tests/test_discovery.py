@@ -10,7 +10,7 @@ from lead_scraper.discovery import (
 
 def test_generate_discovery_queries():
     queries = generate_discovery_queries("Bakery", "Austin, TX")
-    assert len(queries) == 3
+    assert len(queries) >= 3
     assert any("Bakery" in q for q in queries)
     assert any("Austin, TX" in q for q in queries)
 

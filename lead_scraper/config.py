@@ -38,7 +38,11 @@ AGGREGATOR_DOMAINS = {
     
     # Editorial, guides & listicle blogs
     "theinfatuation.com", "eater.com", "timeout.com", "thrillist.com",
-    "grokipedia.com", "citysearch.com", "expertise.com",
+    "grokipedia.com", "citysearch.com", "expertise.com", "tastingtable.com",
+    "wanderlog.com", "cntraveler.com", "culturetrip.com", "travelandleisure.com",
+    "coffeeroasterfinder.com", "coffeevogue.com", "roastlocal.com", "tencoffees.com",
+    "seekseattle.com", "emeraldpalate.com", "mybestseattle.com", "bakio.co",
+    "coffeeroasternearme.com", "restaurantji.com", "menupix.com", "sirved.com",
     
     # Lead databases & intelligence tools
     "contactout.com", "zoominfo.com", "rocketreach.co", "apollo.io",
