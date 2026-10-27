@@ -114,11 +114,8 @@ print(f"Confidence Score: {fused_record['confidence_score']}%")
 
 For **100% Local Mode (`--local`)**, no API keys or environment variables are required!
 
-For **Google Sheets & AI Discovery Mode**, configure `.env`:
+For **Google Sheets Cloud Pipeline Mode**, configure `.env`:
 ```env
-# Optional: OpenRouter key for rotating free open-weights AI models
-OPENROUTER_API_KEY=sk-or-v1-your-key-here
-
 # Optional: Google Cloud Service Account for Sheets integration
 GOOGLE_SHEET_ID=your-google-sheet-id-from-url
 SERVICE_ACCOUNT_FILE=credentials/service_account.json

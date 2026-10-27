@@ -1,7 +1,7 @@
 <p align="center">
   <h1 align="center">🔍 LeadScraper 2.0 Enhanced</h1>
   <p align="center">
-    <strong>Autonomous AI-Driven Lead Generation & Multi-Source Intelligence Engine</strong><br>
+    <strong>Autonomous High-Speed Lead Generation & Multi-Source Intelligence Engine</strong><br>
     High-throughput business discovery, anti-bot crawling, Cloudflare deobfuscation, and multi-source contact fusion.
   </p>
   <p align="center">
@@ -10,7 +10,7 @@
     <img src="https://img.shields.io/badge/Milli%20Engine-V8%20Hyper--Reflex-00c853?logo=speedtest&logoColor=white" alt="Milli Engine">
     <img src="https://img.shields.io/badge/10k%20Benchmark-17.82s%20(561%20leads%2Fs)-brightgreen" alt="10k Benchmark">
     <img src="https://img.shields.io/badge/VS%20Firecrawl-336x%20Faster-ff6d00" alt="VS Firecrawl">
-    <img src="https://img.shields.io/badge/AI%20Models-15%2B%20Rotating%20LLMs-9c27b0?logo=openai&logoColor=white" alt="15+ Rotating Models">
+    <img src="https://img.shields.io/badge/Architecture-100%25%20Deterministic-blueviolet" alt="Deterministic">
     <img src="https://img.shields.io/badge/Cost-%240.00%20Zero--Cost-brightgreen" alt="Zero Cost">
     <img src="https://img.shields.io/badge/License-MIT-lightgrey" alt="License">
   </p>
@@ -30,10 +30,10 @@
 
 ## 📖 What Is LeadScraper 2.0 Enhanced?
 
-**LeadScraper 2.0 Enhanced** is a production-grade, autonomous business intelligence and lead generation pipeline. It replaces manual research, slow single-threaded scrapers, and expensive data brokers with an **integrated AI & high-speed parallel crawling architecture**.
+**LeadScraper 2.0 Enhanced** is a production-grade, autonomous business intelligence and lead generation pipeline. It replaces manual research, slow single-threaded scrapers, and expensive data brokers with an **integrated high-speed parallel crawling and deterministic intelligence architecture**.
 
 Whether given a search term (e.g., *"specialty coffee shops in Austin, TX"*), a list of business names, or a direct website, LeadScraper:
-1. 🤖 **Discovers & Verifies** real operating businesses using an ensemble of 15+ free LLMs and multi-engine searches.
+1. 🌐 **Discovers & Verifies** real operating businesses using multi-engine heuristic search and regional topology.
 2. 🌐 **Locates Official Websites** while automatically filtering out over 40+ directory and aggregator domains (Yelp, TripAdvisor, YellowPages).
 3. ⚡ **Deep Crawls with Milli Universal Engine**, using SIMD fast HTTP and optical browser rendering to bypass anti-bots and extract contact details across homepages and subpages.
 4. 🛡️ **Deobfuscates Cloudflare Protected Data**, recovering emails scrambled with `data-cfemail` and `/cdn-cgi/l/email-protection#...`.
@@ -58,9 +58,9 @@ Whether given a search term (e.g., *"specialty coffee shops in Austin, TX"*), a 
 - Under EU regulations (e.g., the eCommerce Directive and DSGVO/GDPR), businesses are legally required to publish contact emails on their **Impressum** or **Mentions Légales** page.
 - When an email is absent from the homepage, the engine automatically identifies and deep-crawls internal subpages (`/contact`, `/kontakt`, `/impressum`, `/mentions-legales`, `/about`, `/reservation`), yielding a **+60% increase in verified business emails**.
 
-### 4. 🤖 15+ Rotating AI Model Swarm
-- Integrates with OpenRouter to rotate across **15 free state-of-the-art open models** (DeepSeek V3, Qwen 2.5, Llama 3.3, Nvidia Nemotron, Mistral).
-- Features automatic rate-limit cooldown, token tracking, and category-aware prompting (custom extraction guidelines for restaurants, medical clinics, salons, legal offices, and SaaS agencies).
+### 4. ⚡ Zero-Cost Deterministic Contact Extraction
+- Operates entirely without third-party LLM APIs, rate-limited tokens, or paid model subscriptions.
+- Eliminates hallucination risks by relying strictly on verifiable HTML, Schema.org JSON-LD microdata, Cloudflare XOR decoding, and precompiled regex patterns.
 
 ### 5. 🔬 Multi-Source Data Fusion & Confidence Scoring
 - Fuses up to 5 concurrent sources per lead: **Official Website + Search Engine Snippets + Facebook + Instagram + Schema.org JSON-LD**.
@@ -78,7 +78,7 @@ Whether given a search term (e.g., *"specialty coffee shops in Austin, TX"*), a 
 |---|---|---|---|
 | **Crawling Engine** | Manual browser | Single `requests` | **Milli Universal Engine (V8 Hyper-Reflex + SIMD HTTP)** |
 | **Throughput** | 1 lead per 15 min | 1 lead per 2–3 min | **561 leads/second (10,000 in 17.82s)** |
-| **AI Integration** | None | Single fixed model | **15+ Rotating Model Swarm with Auto-Failover** |
+| **External API Reliance**| None | Single fixed model | **100% Zero-API Deterministic (Zero Cost & Hallucinations)** |
 | **Anti-Bot Handling** | Captcha blocks you | Blocked by Cloudflare | **Turnstile Auto-Bypass + Sub-1ms Cookie Sniper** |
 | **Rate Limit Protection**| IP gets banned | Constant 429 errors | **Domain-Aware Adaptive Polite Host Pacer** |
 | **Email Deobfuscation** | None | Misses scrambled emails | **Full Cloudflare `data-cfemail` XOR Decoding** |
@@ -168,7 +168,7 @@ pip install -r requirements.txt
 ### Step 2: Choose Your Execution Mode
 
 #### 🟢 Option A: 100% Local Standalone Mode (Zero API Keys & $0.00 Cost)
-Run instantly without Google Cloud or OpenRouter accounts:
+Run instantly without any external API accounts or keys:
 
 ```bash
 # 1. Scrape and enrich a single website directly with Milli Engine:
@@ -188,19 +188,16 @@ For real-time streaming directly into your team's Google Sheet:
    - Go to [Google Cloud Console](https://console.cloud.google.com/) and enable **Google Sheets API** & **Google Drive API**.
    - Create a Service Account and download the key as `credentials/service_account.json`.
    - Share your Google Sheet with the `client_email` listed in the JSON file.
-2. **Configure OpenRouter (Free AI Key)**:
-   - Grab a free key at [OpenRouter](https://openrouter.ai/keys).
-3. **Set Environment Variables**:
+2. **Set Environment Variables**:
    ```bash
    cp .env.example .env
    ```
-   Add your credentials to `.env`:
+   Add your Google Sheet credentials to `.env`:
    ```env
-   OPENROUTER_API_KEY=sk-or-v1-your-key-here
    GOOGLE_SHEET_ID=your-google-sheet-id-from-url
    SERVICE_ACCOUNT_FILE=credentials/service_account.json
    ```
-4. **Launch Pipeline**:
+3. **Launch Pipeline**:
    ```bash
    python3 main.py --discover "SoHo, New York" --quantity 25 --category "boutique"
    ```
@@ -215,7 +212,7 @@ For real-time streaming directly into your team's Google Sheet:
 ├────────────────────────────────────────────────────────────────────────┤
 │                                                                        │
 │  [1] MULTI-MODAL DISCOVERY                                             │
-│      ├── AI Model Swarm (15+ Rotating LLMs) plans search queries       │
+│      ├── Heuristic Query Planner generates diverse search matrices     │
 │      ├── DuckDuckGo / DDGS Search & OSM Big Data Ingestion             │
 │      └── Aggregator Filter strips 40+ directory domains (Yelp/TripAdv) │
 │                                                                        │
@@ -299,7 +296,7 @@ LeadScraper-2.0-Enhanced/
 ├── .env.example                            ← Configuration template
 ├── .gitignore                              ← Protects secrets & caches
 ├── main.py                                 ← CLI entry point & orchestrator
-├── config.py                               ← Engine parameters & AI rotation
+├── config.py                               ← Engine parameters & host limits
 ├── cap.py                                  ← Terminal capture & logging wrapper
 ├── requirements.txt                        ← Core dependencies
 ├── README.md                               ← Documentation & benchmark reports
@@ -309,10 +306,9 @@ LeadScraper-2.0-Enhanced/
 │
 ├── modules/                                ← Core business logic & engines
 │   ├── crawler.py                          ← Milli Universal Engine & anti-bot sniper
-│   ├── extractor.py                        ← 4-tier contact extractor
+│   ├── extractor.py                        ← Deterministic contact extractor & CF deobfuscator
 │   ├── fusion.py                           ← Data fusion & confidence scoring
 │   ├── local_exporter.py                   ← Standalone CSV, JSON & terminal cards
-│   ├── ai_manager.py                       ← 15+ LLM model rotation manager
 │   ├── async_pipeline.py                   ← High-throughput parallel worker pool
 │   ├── restaurant_discovery.py             ← Intelligent discovery heuristics
 │   ├── search.py                           ← Multi-engine search & aggregator filter
@@ -352,7 +348,7 @@ pytest tests/ -v
 ## 🤔 FAQ
 
 **Q: Is LeadScraper 2.0 Enhanced completely free to run?**
-> **Yes.** You can run the entire pipeline in `--local` mode with $0.00 compute cost. If using AI discovery or Google Sheets, LeadScraper utilizes free LLM tiers on OpenRouter and Google Cloud's free tier.
+> **Yes.** You can run the entire pipeline in `--local` mode with $0.00 compute cost and zero third-party API dependencies. If syncing with Google Sheets, LeadScraper uses Google Cloud's free tier.
 
 **Q: How does it find emails that are hidden from regular scrapers?**
 > Traditional scrapers only look for plain `mailto:` links on the homepage. LeadScraper decodes Cloudflare encrypted hex strings (`data-cfemail`), parses Schema.org JSON-LD microdata, and deep-crawls legally mandated European `/contact` and `/impressum` subpages.

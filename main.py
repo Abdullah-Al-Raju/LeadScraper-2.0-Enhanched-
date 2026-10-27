@@ -25,7 +25,6 @@ from modules.sheets import (
 from modules.search import search_for_website, validate_search_setup
 from modules.crawler import crawl_website
 from modules.extractor import extract_contacts
-from modules.ai_manager import init_ai_manager
 from modules import display
 from modules.cache import ProgressCache
 
@@ -434,9 +433,6 @@ def _validate_config(require_sheets=True):
             logger.error(f"SERVICE_ACCOUNT_FILE ({config.SERVICE_ACCOUNT_FILE}) not found. Run with --local or --output to operate standalone.")
             valid = False
     
-    if not config.OPENROUTER_API_KEY:
-        logger.debug("OPENROUTER_API_KEY not set. Operating in zero-cost local extraction mode.")
-    
     return valid
 
 
@@ -689,16 +685,7 @@ def run_cli_discovery(location, quantity, category, local_mode=False, output_fil
 if __name__ == "__main__":
     display.print_banner()
     
-    # Initialize AI Manager with multi-model support
-    if config.OPENROUTER_API_KEY:
-        init_ai_manager(
-            api_key=config.OPENROUTER_API_KEY,
-            models=config.OPENROUTER_MODELS,
-            base_url=config.OPENROUTER_BASE_URL
-        )
-        display.success(f"AI Manager initialized with {len(config.OPENROUTER_MODELS)} models")
-    else:
-        display.info("AI Manager: Running in local zero-cost mode (Milli High-Speed Extraction)")
+    display.info("Engine: Milli Universal V8 Hyper-Reflex High-Speed Extraction ($0.00 Cost)")
     
     args = parse_args()
     force_milli = not args.no_milli

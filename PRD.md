@@ -64,27 +64,21 @@ python main.py --discover "Dhaka, Bangladesh" --quantity 100
 
 ---
 
-### 3. Multi-Model AI System
+### 3. Milli-Scrapes Universal V8 Engine
 
-**What It Does**: Uses 4 different AI models with automatic rotation to handle rate limits.
+**What It Does**: Pure deterministic contact extraction, Cloudflare deobfuscation, and deep European Impressum crawling with $0.00 compute cost.
 
-**Models**:
-1. `arcee-ai/trinity-large-preview:free`
-2. `stepfun/step-3.5-flash:free`
-3. `deepseek/deepseek-r1-0528:free`
-4. `openrouter/aurora-alpha`
-
-**Smart Rotation**:
-- Automatically switches models on HTTP 429 (rate limit)
-- 60-second cooldown per model
-- Retries with different models
-- Ensures continuous operation
+**Capabilities**:
+1. **Sub-Millisecond Deobfuscation**: Decodes Cloudflare email protection (`data-cfemail`) in sub-1.0 ms without headless browser overhead.
+2. **Deterministic Precompiled Regex**: Multi-pattern extraction for standard and protected emails with false-positive filtering.
+3. **Deep European Impressum Crawling**: Automatically crawls `/contact`, `/kontakt`, `/impressum`, and `/mentions-legales` subpages for GDPR/DSGVO mandatory contacts.
+4. **Social Endpoint Harvesting**: Regex and DOM attribute extraction for Instagram, Facebook, X/Twitter, LinkedIn, TikTok, and WhatsApp.
 
 **Benefits**:
-- No manual intervention needed
-- Handles rate limits gracefully
-- Maximizes throughput
-- Reduces downtime
+- Zero LLM API latency, rate limits, or costs
+- 100% deterministic and reproducible extractions
+- Zero hallucinations
+- Instant sub-millisecond execution
 
 ---
 
@@ -160,15 +154,14 @@ d:\Scrapper\
 ├── config.py                        # All configuration
 ├── .env                            # API keys
 ├── modules/
-│   ├── ai_manager.py               # Multi-model AI rotation
 │   ├── display.py                  # Terminal UI (rich)
 │   ├── utils.py                    # Utilities, logging
 │   ├── sheets.py                   # Google Sheets operations
 │   ├── search.py                   # Multi-engine search
-│   ├── crawler.py                  # Website crawling
-│   ├── extractor.py                # Contact extraction
-│   ├── fusion.py                   # Data fusion
-│   ├── restaurant_discovery.py     # AI discovery
+│   ├── crawler.py                  # Website crawling (Milli-Scrapes engine)
+│   ├── extractor.py                # Deterministic contact extraction & Cloudflare deobfuscation
+│   ├── fusion.py                   # Bayesian data fusion & confidence scoring
+│   ├── restaurant_discovery.py     # Deterministic business discovery
 │   └── sources/
 │       ├── facebook_scraper.py     # Facebook extraction
 │       ├── instagram_scraper.py    # Instagram extraction
@@ -182,31 +175,31 @@ d:\Scrapper\
 ```
 User Command
     ↓
-AI Discovery (optional)
+Heuristic Business Discovery (optional)
     ↓
-Multi-Source Search
+Multi-Source Search (DDGS / Google)
     ↓
-Parallel Extraction (Web, Facebook, Instagram, Website)
+Parallel Extraction (Milli V8 Fast Engine, Facebook, Instagram, European Impressum)
     ↓
-Data Fusion (merge + validate)
+Data Fusion (Bayesian merge + cross-source validation)
     ↓
-Results Sheet
+Results Export (Local JSON/CSV or Google Sheets)
 ```
 
-### AI Architecture
+### Extraction Architecture
 
 ```
-User Request
+Target URL / Crawl Data
     ↓
-AIManager
+Cloudflare Deobfuscator (data-cfemail XOR decode in <1ms)
     ↓
-Model 1 (arcee-ai) → Try
-    ↓ (429 rate limit)
-Model 2 (stepfun) → Try
-    ↓ (429 rate limit)
-Model 3 (deepseek) → Try
-    ↓ (success!)
-Return Data
+Milli V8 Engine & DOM Parser (subpage deep crawler)
+    ↓
+Deterministic Regex Suite (RFC 5322 emails + international phones + social endpoints)
+    ↓
+JSON-LD Structured Schema Parser
+    ↓
+Fused Lead Record ($0.00 Compute Cost)
 ```
 
 ---
@@ -220,10 +213,9 @@ Return Data
 pip install -r requirements.txt
 ```
 
-2. **Configure Environment** (`.env`):
+2. **Configure Environment** (`.env` - Optional for Google Sheets):
 ```env
 GOOGLE_SHEET_ID=your_sheet_id
-OPENROUTER_API_KEY=your_api_key
 SERVICE_ACCOUNT_FILE=credentials/service_account.json
 ```
 
@@ -264,19 +256,6 @@ python main.py
 ---
 
 ## Configuration
-
-### AI Settings (`config.py`)
-
-```python
-OPENROUTER_MODELS = [
-    "arcee-ai/trinity-large-preview:free",
-    "stepfun/step-3.5-flash:free",
-    "deepseek/deepseek-r1-0528:free",
-    "openrouter/aurora-alpha"
-]
-
-AI_MODEL_COOLDOWN = 60  # seconds before retrying rate-limited model
-```
 
 ### Speed Settings
 

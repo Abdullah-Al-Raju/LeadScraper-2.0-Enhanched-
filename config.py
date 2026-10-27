@@ -19,41 +19,6 @@ OUTPUT_TAB_NAME = "Results"
 SERVICE_ACCOUNT_FILE = os.getenv("SERVICE_ACCOUNT_FILE", "credentials/service_account.json")
 
 # ============================================================
-# OPENROUTER AI CONFIGURATION
-# ============================================================
-
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
-
-# Multi-model rotation (AI switches models on rate limits)
-OPENROUTER_MODELS = [
-    # Original 4 models
-    "arcee-ai/trinity-large-preview:free",
-    "stepfun/step-3.5-flash:free",
-    "deepseek/deepseek-r1-0528:free",
-    "openrouter/aurora-alpha",
-    
-    # NEW: 11 additional free models for massive capacity!
-    "liquid/lfm-2.5-1.2b-thinking:free",
-    "liquid/lfm-2.5-1.2b-instruct:free",
-    "nvidia/nemotron-3-nano-30b-a3b:free",
-    "nvidia/nemotron-nano-12b-v2-vl:free",
-    "nvidia/nemotron-nano-9b-v2:free",
-    "openai/gpt-oss-120b:free",
-    "openai/gpt-oss-20b:free",
-    "qwen/qwen3-235b-a22b-thinking-2507",
-    "qwen/qwen3-vl-30b-a3b-thinking",
-    "qwen/qwen3-vl-235b-a22b-thinking",
-    "qwen/qwen3-coder:free"
-]
-
-OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
-MAX_CONTEXT_CHARS = 4000  # Keep under AI token limit
-
-# AI Manager settings
-AI_RETRY_DELAY = 5  # seconds before retrying failed model
-AI_MODEL_COOLDOWN = 60  # seconds before retrying rate-limited model
-
-# ============================================================
 # SCRAPING BEHAVIOR
 # ============================================================
 
