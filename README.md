@@ -6,6 +6,7 @@
   </p>
   <p align="center">
     <img src="https://img.shields.io/badge/Python-3.8%2B-blue?logo=python&logoColor=white" alt="Python 3.8+">
+    <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-blue?logo=windows&logoColor=white" alt="Platform">
     <img src="https://img.shields.io/badge/Milli%20Engine-V8%20Hyper--Reflex-00c853?logo=speedtest&logoColor=white" alt="Milli Engine">
     <img src="https://img.shields.io/badge/10k%20Benchmark-17.82s%20(561%20leads%2Fs)-brightgreen" alt="10k Benchmark">
     <img src="https://img.shields.io/badge/VS%20Firecrawl-336x%20Faster-ff6d00" alt="VS Firecrawl">
@@ -142,10 +143,23 @@ To verify real-world speed and reliability without triggering rate-limit conflic
 - Git
 
 ### Step 1: Clone & Install Dependencies
+
+**On Linux / macOS:**
 ```bash
 git clone https://github.com/Abdullah-Al-Raju/LeadScraper-2.0-Enhanched-.git
 cd LeadScraper-2.0-Enhanched-
 
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+```
+
+**On Windows (PowerShell or Command Prompt):**
+```powershell
+git clone https://github.com/Abdullah-Al-Raju/LeadScraper-2.0-Enhanched-.git
+cd LeadScraper-2.0-Enhanched-
+
+python -m venv venv
+.\venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
