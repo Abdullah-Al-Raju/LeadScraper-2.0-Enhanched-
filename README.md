@@ -5,6 +5,7 @@ An autonomous business discovery, anti-bot web scraping, and contact intelligenc
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://python.org)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-blue.svg)](#quick-start)
 [![Engine](https://img.shields.io/badge/Engine-Milli%20Universal-00c853.svg)](https://github.com/Abdullah-Al-Raju/milli-scrapes)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Abdullah-Al-Raju/lead-scraper-falcon/blob/main/notebooks/LeadScraper_Falcon_Quickstart.ipynb)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ---
@@ -32,7 +33,17 @@ The pipeline integrates the **Milli Universal Engine**, combining fast-path asyn
 
 ## Quick Start
 
-### 1-Click Launchers
+### ☁️ Try Directly in Google Colab (Zero Installation)
+
+Run LeadScraper Falcon directly in your browser with zero local setup:
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Abdullah-Al-Raju/lead-scraper-falcon/blob/main/notebooks/LeadScraper_Falcon_Quickstart.ipynb)
+
+Direct notebook: [`notebooks/LeadScraper_Falcon_Quickstart.ipynb`](notebooks/LeadScraper_Falcon_Quickstart.ipynb)
+
+---
+
+### 🚀 1-Click Local Launchers
 
 Clone the repository and launch immediately using the included platform scripts:
 
