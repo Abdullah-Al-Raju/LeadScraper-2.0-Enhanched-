@@ -1,212 +1,85 @@
-<p align="center">
-  <h1 align="center">🦅 LeadScraper Falcon</h1>
-  <p align="center">
-    <strong>Autonomous High-Speed Lead Generation & Multi-Source Intelligence Engine</strong><br>
-    High-throughput business discovery, anti-bot crawling, Cloudflare deobfuscation, and multi-source contact fusion.
-  </p>
-  <p align="center">
-    <img src="https://img.shields.io/badge/Python-3.8%2B-blue?logo=python&logoColor=white" alt="Python 3.8+">
-    <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-blue?logo=windows&logoColor=white" alt="Platform">
-    <img src="https://img.shields.io/badge/Milli%20Engine-V8%20Hyper--Reflex-00c853?logo=speedtest&logoColor=white" alt="Milli Engine">
-    <img src="https://img.shields.io/badge/10k%20Benchmark-17.82s%20(561%20leads%2Fs)-brightgreen" alt="10k Benchmark">
-    <img src="https://img.shields.io/badge/VS%20Firecrawl-336x%20Faster-ff6d00" alt="VS Firecrawl">
-    <img src="https://img.shields.io/badge/Architecture-100%25%20Deterministic-blueviolet" alt="Deterministic">
-    <img src="https://img.shields.io/badge/Cost-%240.00%20Zero--Cost-brightgreen" alt="Zero Cost">
-    <img src="https://img.shields.io/badge/License-MIT-lightgrey" alt="License">
-    <a href="https://colab.research.google.com/github/Abdullah-Al-Raju/lead-scraper-falcon/blob/main/notebooks/LeadScraper_Falcon_Quickstart.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
-  </p>
-  <p align="center">
-    <a href="#-about-leadscraper-falcon">About</a> •
-    <a href="#-quick-start-zero-code-interactive-wizard">Interactive Wizard</a> •
-    <a href="#-10000-leads-mega-scale-benchmark-showdown">10k Leads Benchmark</a> •
-    <a href="#-global-10000-restaurant-leads-dataset">Global 10k Dataset</a> •
-    <a href="#-key-advanced-systems">Key Features</a> •
-    <a href="#-how-it-works">How It Works</a> •
-    <a href="#-cli-reference">CLI Reference</a> •
-    <a href="#-featured-dataset-luxembourg-nationwide-700">Luxembourg 700</a> •
-    <a href="#-faq">FAQ</a>
-  </p>
-</p>
+# LeadScraper Falcon
+
+An autonomous business discovery, anti-bot web scraping, and contact intelligence pipeline powered by the Milli Universal Engine.
+
+[![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://python.org)
+[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-blue.svg)](#quick-start)
+[![Engine](https://img.shields.io/badge/Engine-Milli%20Universal-00c853.svg)](https://github.com/Abdullah-Al-Raju/milli-scrapes)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ---
 
+## Overview
 
-### 🎯 Overview
-**LeadScraper Falcon** is an open-source, production-grade autonomous business intelligence and high-speed B2B lead generation engine. Engineered at the intersection of high-concurrency network engineering, deterministic data fusion, and in-memory browser automation, Falcon eliminates the need for expensive data brokers (ZoomInfo, Apollo, Apollo API credits), fragile single-threaded scrapers, and manual sales research.
+**LeadScraper Falcon** is a high-throughput, deterministic lead generation and business intelligence pipeline. It automates the process of discovering operational businesses, resolving their official websites, and extracting verified contact information—including direct emails, phone numbers, physical addresses, and social media endpoints.
 
-Powered by the **Milli Universal Engine**, Falcon extracts, deobfuscates, verifies, and corroborates business leads across websites, search matrices, legal Impressum disclosures, and social platforms at a verified world-record speed of **561 leads/second (10,000 leads in 17.82 seconds)** with **$0.00 in compute and API costs**.
-
----
-
-### 💡 Why LeadScraper Falcon? The Industry Problem vs. Our Solution
-
-| The Traditional Lead Gen Bottleneck | The LeadScraper Falcon Solution |
-| :--- | :--- |
-| **Expensive Subscriptions**: Apollo, ZoomInfo, or data brokers charge $5,000 – $25,000/year for stale, outdated databases. | **100% Free & Open-Source ($0.00)**: Scrapes directly from live operational websites in real time with zero subscription fees. |
-| **Cloudflare & Anti-Bot Walls**: Scrapers get instantly blocked by Cloudflare Turnstile, OneTrust, Didomi, or 429 rate limits. | **Milli Universal V8 Engine**: Sub-1ms in-memory DOM microtask hooks auto-dismiss cookie banners and solve Turnstile interstitials without third-party solver APIs. |
-| **Hidden & Scrambled Emails**: Enterprise and EU sites scramble emails behind `data-cfemail` or legal `/impressum` subpages. | **Deterministic XOR Deobfuscation & Deep Subpage Crawler**: Decodes Cloudflare hex scrambled emails in <1ms and deep-crawls internal `/contact` and `/impressum` routes (+60% yield). |
-| **Hallucinated or Stale Data**: LLM-only scrapers frequently hallucinate phone numbers and emails. | **100% Deterministic Provenance**: Rigorously parsed from verified HTML tags, Schema.org JSON-LD microdata, and regex rules with Bayesian confidence scoring (0–100%). |
-| **Single-Threaded Crawling**: Traditional scrapers take 2–5 seconds per URL (10,000 leads takes >10 hours). | **Hyper-Parallel SIMD + Polite Pacer**: Extracts **10,000 leads in 17.82 seconds** (336x faster than Firecrawl) while politely pacing same-domain requests. |
-| **Complex CLI Decisions**: Non-technical users struggle with complex flags, API keys, and database configs. | **Zero-Code Interactive Wizard & 1-Click Launchers**: Double-click `run.bat` (Windows) or `./run.sh` (Linux/Mac) and auto-save simultaneously to `.csv`, `.json`, and `.txt`. |
+The pipeline integrates the **Milli Universal Engine**, combining fast-path asynchronous HTTP/2 connection pooling with headless browser rendering for dynamic JavaScript Single Page Applications (SPAs). It features in-memory V8 microtask interception for sub-millisecond cookie consent dismissal, native Cloudflare Turnstile handling, deterministic Cloudflare XOR email decoding (`data-cfemail`), and an adaptive per-domain host pacer to prevent rate-limit blocks.
 
 ---
 
-### 👥 Who Is This For?
+## Key Features
 
-- 💼 **B2B Sales & Outbound Teams (SDRs/BDRs)**: Instantly generate verified prospect lists with direct emails, phone numbers, and LinkedIn handles for cold outreach and CRM enrichment.
-- 🚀 **Growth Hackers & Founders**: Launch cold outbound campaigns, scrape regional competitors, and discover new market segments at zero cost.
-- 🏢 **Marketing Agencies & Lead Vendors**: Deliver high-volume, clean lead databases to clients formatted in Excel-ready CSV, developer JSON, and readable TXT summaries.
-- 🤖 **AI Agent Developers & RAG Pipelines**: Feed clean, real-time, verified business data into autonomous agents, LangChain/LlamaIndex pipelines, or LLM contexts.
-- 📊 **Market Researchers & Data Analysts**: Ingest nationwide commercial directories using OpenStreetMap (OSM) big data ingestion and heuristic multi-engine search.
-
----
-
-### ⚡ What Falcon Does Automatically on Every Target
-1. 🌐 **Autonomous Business Discovery**: Pinpoints real operating businesses across search matrices and regional geospatial topology while stripping out 40+ directory aggregators (Yelp, TripAdvisor, YellowPages).
-2. 🔍 **Official Website Resolution**: Bypasses aggregator middle-men to isolate the business's actual root domain.
-3. ⚡ **Milli Engine Deep Crawl**: Employs dual-path SIMD fast HTTP/2 connection pooling and CDP optical browser rendering with sub-1ms V8 cookie consent auto-dismissal.
-4. 🛡️ **Cloudflare XOR Deobfuscation**: Decodes `<span data-cfemail="...">` and `/cdn-cgi/l/email-protection#...` scrambled emails deterministically.
-5. 🇪🇺 **Impressum & Subpage Deep Discovery**: Automatically crawls `/contact`, `/kontakt`, `/impressum`, `/mentions-legales`, `/about`, and `/reservation`.
-6. 📱 **Deep Social Footprint Harvesting**: Discovers official endpoints across Facebook, Instagram, LinkedIn, Twitter/X, TikTok, YouTube, and WhatsApp.
-7. 🔬 **Bayesian-Weighted Data Fusion**: Corroborates fields across up to 5 concurrent sources and calculates an objective 0–100% confidence score.
-8. 💾 **Automatic Multi-Format Delivery**: Saves simultaneously to `.csv` (Excel/Sheets), `.json` (Developers/CRMs), and `.txt` (Lead Cards) in `output/` with zero configuration.
+- **Zero-Code Interactive Wizard**: Launch via 1-click scripts (`run.bat` on Windows, `run.sh` on Linux/macOS) with guided numbered templates for non-technical users.
+- **Dynamic Business Discovery**: Search operating businesses by location and category using heuristic search matrices and regional geospatial topology while filtering out 40+ directory aggregators (Yelp, TripAdvisor, YellowPages).
+- **Deep Contact Extraction**: Automatically extracts verified emails, phone numbers, street addresses, and social endpoints (Facebook, Instagram, LinkedIn, Twitter/X, TikTok, YouTube, WhatsApp).
+- **Impressum & Subpage Deep Crawler**: Traverses internal subpages (`/contact`, `/kontakt`, `/impressum`, `/mentions-legales`, `/about`) to recover legally mandated contact information.
+- **Cloudflare XOR Deobfuscation**: Decodes `<span data-cfemail="...">` and `/cdn-cgi/l/email-protection#...` scrambled emails deterministically in sub-millisecond execution.
+- **Adaptive Polite Host Pacer**: Enforces per-domain token buckets (50ms–200ms) with exponential backoff on HTTP 429 errors while running concurrent requests across different hosts at full speed.
+- **Multi-Source Data Fusion**: Corroborates fields across up to 5 concurrent sources (website, search snippets, Schema.org JSON-LD, social metadata) and computes a 0–100% Bayesian confidence score.
+- **Automatic Multi-Format Export**: Automatically saves every run simultaneously to `.csv`, `.json`, and `.txt` in the `output/` directory, with optional real-time streaming to Google Sheets.
 
 ---
 
-## 🚀 Key Advanced Systems
+## Quick Start
 
-### 1. 🏎️ Milli Universal Engine (V8 Hyper-Reflex & Polite Pacer)
-- **V8 In-Memory Hyper-Reflex Hooks**: Leverages sub-millisecond DOM microtask interception (originally engineered in Milli's Seat Sniper) to dismiss OneTrust, Didomi, Cookiebot, and Cloudflare Turnstile barriers in **< 1.0 ms** before pages even finish rendering.
-- **Dual-Path Architecture**: Automatically triages targets between ultra-fast SIMD asynchronous HTTP/2 connection pooling (tested up to **561+ leads/second**) and Headless CDP optical rendering for dynamic Single Page Applications (SPAs).
-- **Domain-Aware Polite Host Pacer**: When scraping real websites, hammering a single host causes HTTP 429 bans. LeadScraper uses an adaptive per-domain token bucket that enforces polite intervals (50ms–200ms) and automatic exponential backoff on identical domains while allowing cross-domain scraping to fly at unrestricted hyper-speed.
+### 1-Click Launchers
 
-### 2. 🛡️ Cloudflare Email Deobfuscation
-- Many European and enterprise business websites protect their contact information behind Cloudflare email scramblers.
-- LeadScraper features a built-in deterministic XOR deobfuscator that decodes `<span data-cfemail="...">` and `<a href="/cdn-cgi/l/email-protection#...">` tags in sub-millisecond execution without requiring a headless browser.
-
-### 3. 🇪🇺 Autonomous Contact & Impressum Deep Discovery
-- Under EU regulations (e.g., the eCommerce Directive and DSGVO/GDPR), businesses are legally required to publish contact emails on their **Impressum** or **Mentions Légales** page.
-- When an email is absent from the homepage, the engine automatically identifies and deep-crawls internal subpages (`/contact`, `/kontakt`, `/impressum`, `/mentions-legales`, `/about`, `/reservation`), yielding a **+60% increase in verified business emails**.
-
-### 4. ⚡ Zero-Cost Deterministic Extraction + Optional Free AI Tier
-- **Deterministic by Default**: Operates locally with zero third-party API dependencies, rate limits, or costs, relying strictly on verifiable HTML, Schema.org JSON-LD microdata, Cloudflare XOR decoding, and precompiled regex patterns.
-- **Optional OpenRouter Free Auto-Router**: If configured with `OPENROUTER_API_KEY`, LeadScraper can optionally query OpenRouter's free auto-router (`openrouter/free`) with server-side fallbacks across free models (`meta-llama/llama-3.3-70b-instruct:free`, `google/gemini-2.0-flash-exp:free`, `qwen/qwen-2.5-72b-instruct:free`) for challenging unstructured layouts.
-
-### 5. 🔬 Multi-Source Data Fusion & Confidence Scoring
-- Fuses up to 5 concurrent sources per lead: **Official Website + Search Engine Snippets + Facebook + Instagram + Schema.org JSON-LD**.
-- Resolves conflicts using source priority heuristics (e.g., official website supersedes aggregator directories).
-- Computes an objective 0–100% confidence score based on multi-source corroboration and field completeness.
-
-### 6. 🗺️ High-Speed Geospatial OSM Ingestion
-- Includes a dedicated C++ Osmium stream parser module capable of processing nationwide OpenStreetMap PBF extracts (millions of spatial nodes and building polygons) in seconds, making regional lead generation completely independent of third-party APIs.
-
----
-
-## 🔄 Evolution Matrix
-
-| Capability | 📋 Manual Research | 🔧 LeadScraper v1.0 | 🦅 LeadScraper Falcon |
-|---|---|---|---|
-| **Crawling Engine** | Manual browser | Single `requests` | **Milli Universal Engine (V8 Hyper-Reflex + SIMD HTTP)** |
-| **Throughput** | 1 lead per 15 min | 1 lead per 2–3 min | **561 leads/second (10,000 in 17.82s)** |
-| **External API Reliance**| None | Single fixed model | **100% Zero-API Deterministic (Zero Cost & Hallucinations)** |
-| **Anti-Bot Handling** | Captcha blocks you | Blocked by Cloudflare | **Turnstile Auto-Bypass + Sub-1ms Cookie Sniper** |
-| **Rate Limit Protection**| IP gets banned | Constant 429 errors | **Domain-Aware Adaptive Polite Host Pacer** |
-| **Email Deobfuscation** | None | Misses scrambled emails | **Full Cloudflare `data-cfemail` XOR Decoding** |
-| **Subpage Deep Crawl** | Manual clicks | Homepage only | **Autonomous Impressum & Contact Subpage Crawler** |
-| **Social Coverage** | Search by hand | Basic regex | **Facebook, Instagram, LinkedIn, X, TikTok, YouTube, WhatsApp** |
-| **Data Verification** | Guesswork | Single source | **Multi-Source Corroboration & Confidence Scoring (0–100%)** |
-| **Export Destinations** | Excel copy-paste | Google Sheets only | **Google Sheets Cloud Sync + Standalone CSV & JSON ($0 Cost)** |
-| **Geospatial Big Data** | N/A | Not supported | **Osmium C++ Engine for Nationwide OSM Ingestion** |
-
----
-
-## 🏎️ 10,000 Leads Mega-Scale Benchmark Showdown
-
-> **Benchmark Date**: October 2026 | **Scale**: 10,000 Production Enterprise Leads | **Winner**: 🏆 **LeadScraper Falcon + Milli (336.7x Faster than Firecrawl)**  
-> **Full Technical Audit**: [`BENCHMARK_10000_LEADS_REPORT.md`](BENCHMARK_10000_LEADS_REPORT.md)
-
-### Calculative Comparison: LeadScraper Falcon (Milli Engine) vs. Firecrawl
-
-| Metric | Firecrawl (Standard Plan / Self-Hosted) | LeadScraper Falcon (Milli Engine) | Advantage / Factor |
-| :--- | :--- | :--- | :--- |
-| **Wall-Clock Time (10,000 Leads)** | **100.0 minutes** (1.67 hours) | **0.30 minutes** (17.82 seconds) | 🏆 **336.7x Faster** |
-| **Throughput (Leads / Second)** | 1.67 leads / sec (100 req/min limit) | **561.2 leads / sec** | 🏆 **336.1x Throughput** |
-| **Response Latency (P50 Median)** | ~1,850.0 ms | **1.20 ms** | 🏆 **1,541.7x Faster** |
-| **Response Latency (P99 Tail)** | ~4,200.0 ms | **1.20 ms** | 🏆 **3,500.0x Faster** |
-| **Memory Footprint (RAM)** | ~1,800 MB (Playwright + Redis cluster) | **228.3 MB** | 🏆 **7.9x Lighter** |
-| **API Compute Cost** | **$20.00 – $40.00** | **$0.00** (Zero Cost) | 🏆 **100% Free** |
-| **V8 Hyper-Reflex Hooks** | None (Slow CDP WebSocket roundtrips) | **< 1.0 ms in-memory V8 microtasks** | 🏆 **Zero arbitrary sleeps** |
-| **Domain-Aware Polite Pacer** | Global Cloud Throttle | **Per-Domain Adaptive Pacing** | 🏆 **Zero 429 drops / bans** |
-| **LLM Token Reduction** | ~60% - 70% | **79.9%** | 🏆 **Denser clean Markdown** |
-
----
-
-## 🌍 Global 10,000 Restaurant Leads Dataset
-
-To verify real-world speed and reliability without triggering rate-limit conflicts on live websites, we crawled and verified **10,000 restaurant leads** across top metropolitan cities across 5 nations: **Australia, USA, Luxembourg, UAE, and Japan**.
-
-> **Full Dataset Report**: [`output/10000_RESTAURANTS_LEADS_REPORT.md`](output/10000_RESTAURANTS_LEADS_REPORT.md)
-
-### Contact & Social Discovery Coverage
-
-| Attribute | Leads Captured | Coverage % | Discovery Details |
-| :--- | :--- | :--- | :--- |
-| **Direct / Inquiries Email** | **10,000** | **100.0%** | Concierge, reservations, and management emails |
-| **Instagram Profiles** | **10,000** | **100.0%** | Official verified restaurant Instagram handles |
-| **Facebook Business Pages** | **10,000** | **100.0%** | Active business Facebook endpoints |
-| **Twitter / X Profiles** | **10,000** | **100.0%** | Official X / Twitter accounts |
-| **LinkedIn Company Pages** | **3,334** | **33.3%** | Enterprise & group hospitality pages |
-| **TikTok Hospitality Channels** | **2,500** | **25.0%** | Short-form culinary video handles |
-| **Physical Street Address** | **10,000** | **100.0%** | Full street addresses in primary metropolitan hubs |
-
-### Real-World Conflict Prevention: Why This Speed Works on Live Sites
-- **Domain-Distributed Wide Crawling**: When scraping 10,000 restaurant leads across independent domains, requests hit thousands of distinct server IPs. No individual restaurant server receives destructive request flooding.
-- **Adaptive Per-Domain Host Pacer**: When scraping multiple pages on the same domain (e.g., homepage + `/contact` + `/menu`), Milli's adaptive host pacer paces same-domain requests by 50ms–200ms and applies automatic exponential backoff on HTTP 429.
-- **Sub-1ms V8 Consent Sniper**: Auto-dismisses European and global cookie consent banners without waiting for full page re-renders or executing multi-second `sleep()` loops.
-
----
-
-## ⚡ Quick Start: Zero-Code Interactive Wizard
-
-LeadScraper Falcon is designed for **everyone**—from non-technical business operators to advanced data engineers. You do not need to memorize CLI arguments or write code.
-
-### 🚀 1-Click Launchers (Windows, Linux & macOS)
-
-Clone the repository and launch instantly with automated one-click scripts:
+Clone the repository and launch immediately using the included platform scripts:
 
 ```bash
 git clone https://github.com/Abdullah-Al-Raju/lead-scraper-falcon.git
 cd lead-scraper-falcon
 ```
 
-- **On Windows**: Double-click `run.bat` or run in Command Prompt / PowerShell:
+- **Windows**: Double-click `run.bat` or run in Command Prompt:
   ```cmd
   run.bat
   ```
-- **On Linux / macOS**: Run `run.sh` in terminal:
+- **Linux / macOS**: Run `run.sh` in terminal:
   ```bash
   chmod +x run.sh && ./run.sh
   ```
-*(The one-click launchers automatically verify Python 3.8+, create and activate a virtual environment, install all dependencies with the integrated core Milli Engine, and launch the interactive wizard immediately.)*
 
-#### Or Manual Terminal Launch:
+*The launcher script verifies Python 3.8+, creates and activates a virtual environment, installs dependencies from `requirements.txt` (including the integrated Milli Engine), and launches the interactive wizard.*
+
+### Manual Installation
+
 ```bash
-python3 -m venv venv && source venv/bin/activate   # On Windows: .\venv\Scripts\activate
+# Clone repository
+git clone https://github.com/Abdullah-Al-Raju/lead-scraper-falcon.git
+cd lead-scraper-falcon
+
+# Set up virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: .\venv\Scripts\activate
+
+# Install dependencies
 pip install -r requirements.txt
+
+# Launch interactive menu
 python main.py
 ```
-*(Running `python main.py` with zero arguments automatically launches the interactive wizard!)*
 
 ---
 
-### 🪄 The 3 Guided Extraction Templates
+## Interactive Wizard Modes
 
-Upon launch, you are greeted with the interactive menu:
+Running `python main.py` with no arguments opens the interactive template menu:
 
-```
+```text
 =================================================================
   🦅 LEADSCRAPER FALCON - ZERO-CODE INTERACTIVE WIZARD
-  Powered by Milli Universal V8 Engine (336x Faster than Firecrawl)
+  Powered by Milli Universal Engine
 =================================================================
 
 Choose an extraction template:
@@ -214,231 +87,129 @@ Choose an extraction template:
   [2] Named Business Search       (Find & enrich a business by its name)
   [3] Dynamic Discovery           (Find multiple businesses by location & category)
   [q] Exit
-
-Select an option (1, 2, 3, or q): 
 ```
 
-#### 🌐 Template 1: Direct Website Extraction
-- **Best For**: You have a specific business website URL and need verified contact details immediately.
-- **How it works**: Enter any website (e.g., `https://www.joscoffee.com`). Falcon deep crawls the site with Milli Universal Engine, resolves Cloudflare scrambled emails (`data-cfemail`), crawls internal `/contact` and `/about` subpages, and discovers all social handles (Facebook, Instagram, LinkedIn, Twitter/X, TikTok, YouTube).
+1. **Option 1 (Direct Website Extraction)**: Scrapes a provided URL directly, deobfuscating emails, crawling contact subpages, and extracting social profiles.
+2. **Option 2 (Named Business Search)**: Takes a business name and optional city, discovers the official website, filters directory aggregator links, and enriches the lead.
+3. **Option 3 (Dynamic Discovery)**: Takes a location, business category, and target lead quantity, discovering and enriching multiple businesses in parallel.
 
-#### 🏢 Template 2: Named Business Search
-- **Best For**: You know the business name and optional city, but don't have their website or email.
-- **How it works**: Enter the business name (e.g., `Joe's Bakery` or `Philz Coffee`) and optional city (e.g., `Austin, TX`). Falcon automatically locates the official operating website, filters out 40+ directory aggregators (Yelp, TripAdvisor), and deep-enriches the lead.
+### Output Files
 
-#### 🎯 Template 3: Dynamic Regional Discovery
-- **Best For**: Generating new qualified leads in any city, country, or niche in the world.
-- **How it works**:
-  1. Enter target location / city / country (e.g., `Austin, TX` or `London, UK`).
-  2. Enter business category or niche (e.g., `coffee shop`, `plumber`, `dentist`, `boutique`).
-  3. Enter desired quantity of leads (e.g., `10` or `50`).
-  Falcon autonomously queries search matrices, filters out aggregators, and runs parallel Milli crawls to extract fully enriched leads with confidence scores.
+Every run automatically writes results to all three standard formats in the `output/` folder:
+
+| Format | Path | Purpose |
+| :--- | :--- | :--- |
+| **CSV** | `output/leads_<timestamp>.csv` | Ready for Microsoft Excel, Google Sheets, and CRM import |
+| **JSON** | `output/leads_<timestamp>.json` | Structured JSON with full source provenance and confidence scores |
+| **TXT** | `output/leads_<timestamp>.txt` | Human-readable lead report summary |
 
 ---
 
-### 💾 Zero Decision Burden: Automatic Multi-Format Saving
+## Command-Line Interface (CLI)
 
-You don't need to choose output formats or configure export flags. Every run automatically saves your leads simultaneously to all 3 industry-standard formats inside the `output/` directory:
+For automated environments, CI/CD, or batch scripts, LeadScraper Falcon supports direct CLI arguments:
 
-| Format | File Path | Use Case |
-|---|---|---|
-| **CSV** | `output/leads_<timestamp>.csv` | Open directly in **Microsoft Excel**, **Google Sheets**, or import to **CRMs** (HubSpot, Salesforce, Apollo) |
-| **JSON** | `output/leads_<timestamp>.json` | Full structured metadata, raw API payloads, source corroboration, and confidence scores for developers |
-| **TXT** | `output/leads_<timestamp>.txt` | Clean, human-readable lead report cards for quick team reading and executive summaries |
-
-The tool prints the exact absolute file paths right in your console as soon as extraction finishes:
-```
-=================================================================
-  🎉 SUCCESS: All leads saved locally in 3 formats!
-  📁 CSV:  /path/to/lead-scraper-falcon/output/leads_20261027_153000.csv
-  📁 JSON: /path/to/lead-scraper-falcon/output/leads_20261027_153000.json
-  📁 TXT:  /path/to/lead-scraper-falcon/output/leads_20261027_153000.txt
-=================================================================
-```
-
----
-
-### ⚙️ Advanced Execution Modes (For Developers & Power Users)
-
-For headless CI/CD, scheduled cron jobs, or batch pipelines, you can run LeadScraper Falcon directly via command-line arguments:
-
-#### 🟢 1. Local CLI Standalone Mode (Zero API Keys & $0.00 Cost)
 ```bash
-# Direct website extraction:
-python3 main.py --url "https://kaempff-kohler.lu" --local --output output/single_lead.json
+# Direct website extraction
+python main.py --url "https://example.com" --local
 
-# Named business search:
-python3 main.py --business "Philz Coffee" --city "San Francisco" --local --output output/coffee.csv
+# Named business search
+python main.py --business "Philz Coffee" --city "San Francisco" --local
 
-# Autonomous dynamic discovery:
-python3 main.py --discover "Austin, TX" --quantity 10 --category "coffee" --local --output output/austin_coffee.csv
+# Dynamic discovery mode
+python main.py --discover "Austin, TX" --category "coffee shop" --quantity 10 --local
 ```
 
-#### 🔵 2. Google Sheets Cloud Pipeline Mode
-For real-time streaming directly into your team's live Google Sheet:
-1. **Set Up Google Sheets API**:
-   - Enable **Google Sheets API** & **Google Drive API** in Google Cloud Console.
-   - Create a Service Account, save credentials to `credentials/service_account.json`, and share your Sheet with the service account email.
-2. **Configure `.env`**:
-   ```bash
-   cp .env.example .env
-   ```
-   Add your Google Sheet ID:
+### CLI Arguments Reference
+
+| Argument | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `--discover` | string | `None` | Target geographic location to discover businesses |
+| `--category` | string | `None` | Business category or niche filter |
+| `--quantity` | integer | `10` | Number of businesses to extract |
+| `--business` | string | `None` | Direct business search by name |
+| `--city` | string | `None` | City hint for direct business search |
+| `--url` | string | `None` | Direct URL mode: scrape a single website |
+| `--local` | flag | `False` | Run in standalone mode without Google Sheets sync |
+| `--output` | string | `None` | Custom export filepath (`.csv`, `.json`, or `.txt`) |
+| `--no-milli` | flag | `False` | Disable the Milli engine and fall back to standard HTTPX |
+| `--ai` | flag | `False` | Enable optional AI extraction fallback (requires `OPENROUTER_API_KEY`) |
+
+---
+
+## Google Sheets Integration (Optional)
+
+To stream leads directly into a shared Google Sheet:
+
+1. Enable the **Google Sheets API** and **Google Drive API** in Google Cloud Console.
+2. Create a Service Account, generate a JSON key, and save it as `credentials/service_account.json`.
+3. Share your target Google Sheet with the service account's `client_email`.
+4. Copy `.env.example` to `.env` and set:
    ```env
-   GOOGLE_SHEET_ID=your-google-sheet-id-from-url
+   GOOGLE_SHEET_ID=your-google-sheet-id
    SERVICE_ACCOUNT_FILE=credentials/service_account.json
    ```
-3. **Launch Streaming Pipeline**:
+5. Run commands without `--local`:
    ```bash
-   python3 main.py --discover "SoHo, New York" --quantity 25 --category "boutique"
+   python main.py --discover "SoHo, New York" --category "boutique" --quantity 25
    ```
-
-#### 🟣 3. Optional OpenRouter Free AI Auto-Router Tier
-LeadScraper Falcon is **100% deterministic and zero-cost by default**. If you wish to enable optional AI-assisted extraction for deeply unstructured pages:
-- Add your free OpenRouter API key to `.env`:
-  ```env
-  OPENROUTER_API_KEY=sk-or-v1-your-key-here
-  ```
-- LeadScraper will automatically use free models (`openrouter/free`) as a secondary fallback if deterministic extraction detects sparse fields. You can also explicitly control AI mode with `--ai` or `--no-ai`.
 
 ---
 
-## 🔧 How It Works
+## Architecture
 
-```
+```text
 ┌────────────────────────────────────────────────────────────────────────┐
-│                         LeadScraper Falcon Pipeline                    │
+│                        LeadScraper Falcon Pipeline                     │
 ├────────────────────────────────────────────────────────────────────────┤
-│                                                                        │
-│  [1] MULTI-MODAL DISCOVERY                                             │
-│      ├── Heuristic Query Planner generates diverse search matrices     │
-│      ├── DuckDuckGo / DDGS Search & OSM Big Data Ingestion             │
-│      └── Aggregator Filter strips 40+ directory domains (Yelp/TripAdv) │
-│                                                                        │
-│  [2] MILLI UNIVERSAL CRAWLING ENGINE                                   │
-│      ├── Dual-Path: Ultra-Fast SIMD Async HTTP/2 + Optical Browser CDP │
-│      ├── Autonomous Anti-Bot: Cloudflare Turnstile Bypass              │
-│      └── Cookie Consent Auto-Dismissal                                 │
-│                                                                        │
-│  [3] DEEP CONTACT & EMAIL EXTRACTION                                   │
-│      ├── Cloudflare XOR Deobfuscator (`data-cfemail` & `protection#`) │
-│      ├── Multilingual Subpage Crawler (/contact, /impressum, /about)   │
-│      ├── JSON-LD Schema.org Entity Parser                              │
-│      └── Social Sniper: FB, IG, LinkedIn, X, TikTok, YouTube, WhatsApp │
-│                                                                        │
-│  [4] MULTI-SOURCE DATA FUSION                                          │
-│      ├── Cross-source corroboration & conflict resolution               │
-│      └── Bayesian-weighted Confidence Scoring (0 - 100%)               │
-│                                                                        │
-│  [5] MULTI-CHANNEL EXPORT                                              │
-│      ├── Standalone Mode: Clean CSV & JSON (Zero Cost)                 │
-│      └── Cloud Mode: Real-Time Google Sheets Streaming                 │
+│  [1] Discovery Engine     Multi-engine search & OSM geospatial data    │
+│  [2] Aggregator Filter    Strips 40+ directory domains (Yelp, TripAdv) │
+│  [3] Milli Universal      Dual-path SIMD HTTP/2 & CDP browser rendering│
+│  [4] Anti-Bot Interceptor Sub-1ms V8 cookie consent & Turnstile solver │
+│  [5] Contact Extractor    Cloudflare XOR deobfuscator & Impressum crawl│
+│  [6] Social Sniper        Extracts FB, IG, LinkedIn, X, TikTok, YT, WA │
+│  [7] Data Fusion          Bayesian confidence scoring (0–100%)         │
+│  [8] Multi-Export         Simultaneous CSV, JSON, TXT & Google Sheets  │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🏆 Featured Dataset: Luxembourg Nationwide 700
+## Benchmarks & Sample Datasets
 
-To benchmark LeadScraper Falcon against complex real-world data, we extracted and verified **700 dining establishments across all cantons and communes in the country of Luxembourg**.
-
-Using the deep contact and Impressum crawler with 60 parallel workers, the entire extraction and enrichment completed in **64.96 seconds**:
-
-| Metric | Result | Coverage |
-| :--- | :--- | :--- |
-| **Total Establishments Processed** | **700** | 100% |
-| **With Verified Official Websites** | **689** | **98.4%** |
-| **With Direct Email Addresses** | **355** | **50.7%** *(+63% yield via Impressum crawler)* |
-| **With Social Media Profiles** | **292** | **41.7%** |
-| — *Facebook Profiles* | **264** | **37.7%** |
-| — *Instagram Profiles* | **207** | **29.6%** |
-| — *LinkedIn Profiles* | **23** | **3.3%** |
-| — *Twitter / X Profiles* | **15** | **2.1%** |
-| — *YouTube Channels* | **11** | **1.6%** |
-| — *Direct WhatsApp Links* | **7** | **1.0%** |
-| **With Physical Street Addresses** | **531** | **75.9%** |
-| **With Phone Numbers (Optional)** | **558** | **79.7%** |
-| **Average Lead Confidence Score** | **68.1%** | *(Verified across multiple sources)* |
-| **Total Pipeline Runtime** | **64.96s** | **~10.8 restaurants/second** |
-
-### 📁 Direct Dataset Downloads:
-- **CSV Format**: [`output/luxembourg_700_restaurants.csv`](output/luxembourg_700_restaurants.csv)
-- **JSON Format**: [`output/luxembourg_700_restaurants.json`](output/luxembourg_700_restaurants.json)
-
-To execute or adapt the nationwide crawler for your region:
-```bash
-python3 scripts/scrape_luxembourg_restaurants.py
-```
+- **10,000 Leads Benchmark**: Benchmark report evaluating 10,000 production leads across 50 industries. See [`BENCHMARK_10000_LEADS_REPORT.md`](BENCHMARK_10000_LEADS_REPORT.md).
+- **Global 10,000 Restaurants Dataset**: Extraction across Australia, USA, Luxembourg, UAE, and Japan. See [`output/10000_RESTAURANTS_LEADS_REPORT.md`](output/10000_RESTAURANTS_LEADS_REPORT.md).
+- **Luxembourg Nationwide 700**: 700 dining establishments across Luxembourg. Download: [`output/luxembourg_700_restaurants.csv`](output/luxembourg_700_restaurants.csv).
 
 ---
 
-## 💻 CLI Reference
+## Project Structure
 
-| Flag | Type | Description | Example |
-|---|---|---|---|
-| `--discover` | String | Target geographic location to discover businesses | `--discover "Paris, France"` |
-| `--category` | String | Business category or niche filter | `--category "bakeries"` |
-| `--quantity` | Integer | Number of businesses to extract (default: 10) | `--quantity 50` |
-| `--local` | Flag | Run in standalone mode without Google Sheets | `--local` |
-| `--output` | String | Filepath for local export (`.csv` or `.json`) | `--output output/leads.csv` |
-| `--url` | String | Direct URL mode: scrape & enrich a single site | `--url "https://example.com"` |
-| `--business` | String | Direct business search mode by name | `--business "Tartine Bakery"` |
-| `--city` | String | City hint for direct business search | `--city "San Francisco"` |
-| `--no-milli` | Flag | Disable Milli engine and force fallback HTTPX | `--no-milli` |
-
----
-
-## 📁 Repository Structure
-
-```
+```text
 lead-scraper-falcon/
-├── run.bat                                 ← 1-Click zero-code launcher for Windows
-├── run.sh                                  ← 1-Click zero-code launcher for Linux/macOS
-├── .env.example                            ← Configuration template
-├── .gitignore                              ← Protects secrets & caches
-├── main.py                                 ← CLI entry point & orchestrator (Interactive Wizard)
-├── config.py                               ← Engine parameters & host limits
-├── cap.py                                  ← Terminal capture & logging wrapper
-├── requirements.txt                        ← Core dependencies & integrated Milli Engine
-├── README.md                               ← Documentation & benchmark reports
-│
-├── scripts/
-│   └── scrape_luxembourg_restaurants.py    ← Ultra-fast nationwide deep crawler
-│
-├── modules/                                ← Core business logic & engines
-│   ├── crawler.py                          ← Milli Universal Engine & anti-bot sniper
-│   ├── extractor.py                        ← Deterministic contact extractor & CF deobfuscator
-│   ├── fusion.py                           ← Data fusion & confidence scoring
-│   ├── local_exporter.py                   ← Standalone CSV, JSON & terminal cards
-│   ├── async_pipeline.py                   ← High-throughput parallel worker pool
-│   ├── discovery.py                        ← Intelligent dynamic business discovery (any niche)
-│   ├── search.py                           ← Multi-engine search & aggregator filter
-│   ├── sheets.py                           ← Google Sheets cloud integration
-│   ├── http_client.py                      ← Resilient HTTP client with backoff
-│   ├── rate_limiter.py                     ← Adaptive per-host rate limiter
-│   ├── cache.py                            ← Persistent progress cache (resume support)
-│   ├── display.py                          ← Rich terminal formatting
-│   ├── utils.py                            ← Validators & CF email deobfuscator
-│   └── sources/                            ← Social & snippet extractors
-│       ├── search_result_extractor.py
-│       ├── facebook_scraper.py
-│       └── instagram_scraper.py
-│
-├── output/                                 ← Production datasets
-│   ├── luxembourg_700_restaurants.csv      ← 700 verified Luxembourg restaurant leads
-│   └── luxembourg_700_restaurants.json     ← Structured JSON with full provenance
-│
-└── tests/                                  ← Pytest suite
-    ├── test_crawler.py
-    ├── test_extractor.py
-    └── test_fusion.py
+├── run.bat                     # 1-Click launcher for Windows
+├── run.sh                      # 1-Click launcher for Linux and macOS
+├── main.py                     # Entry point & interactive wizard
+├── config.py                   # Configuration & rate limits
+├── requirements.txt            # Dependencies (includes integrated Milli engine)
+├── modules/
+│   ├── crawler.py              # Milli Universal Engine integration
+│   ├── extractor.py            # Contact extraction & Cloudflare deobfuscator
+│   ├── fusion.py               # Multi-source data fusion & confidence scoring
+│   ├── local_exporter.py       # Multi-format export (CSV, JSON, TXT)
+│   ├── discovery.py            # Dynamic business discovery engine
+│   ├── search.py               # Search querying & aggregator domain filter
+│   ├── rate_limiter.py         # Adaptive per-host rate limiter
+│   └── sheets.py               # Google Sheets cloud synchronization
+├── output/                     # Generated export files
+└── tests/                      # Pytest test suite
 ```
 
 ---
 
-## 🧪 Running Unit & Integration Tests
+## Testing
 
-LeadScraper Falcon includes a full test suite covering extraction, Cloudflare decoding, rate limiting, and multi-source fusion:
+Run the test suite with `pytest`:
 
 ```bash
 pytest tests/ -v
@@ -446,34 +217,14 @@ pytest tests/ -v
 
 ---
 
-## 🤔 FAQ
+## License
 
-**Q: Is LeadScraper Falcon completely free to run?**
-> **Yes.** You can run the entire pipeline in `--local` mode with $0.00 compute cost and zero third-party API dependencies. If syncing with Google Sheets, LeadScraper uses Google Cloud's free tier.
-
-**Q: How does it find emails that are hidden from regular scrapers?**
-> Traditional scrapers only look for plain `mailto:` links on the homepage. LeadScraper decodes Cloudflare encrypted hex strings (`data-cfemail`), parses Schema.org JSON-LD microdata, and deep-crawls legally mandated European `/contact` and `/impressum` subpages.
-
-**Q: Does it work for non-restaurant businesses?**
-> Absolutely. LeadScraper is domain-agnostic. Simply specify `--category` (e.g., `--category "dentists"`, `--category "marketing agencies"`, `--category "gyms"`).
-
-**Q: What happens if a target website blocks requests?**
-> The Milli Universal Engine features automatic user-agent rotation, intelligent connection pooling, and transparent fallback mechanisms to ensure high extraction resilience without stalling the pipeline.
+This project is licensed under the [MIT License](LICENSE).
 
 ---
 
-## 👤 Author
+## Author
 
-**Abdullah Al Raju**
-- GitHub: [@Abdullah-Al-Raju](https://github.com/Abdullah-Al-Raju)
-- Email: <abdullahalraju33@gmail.com>
-
----
-
-## 📜 License
-
-This project is licensed under the MIT License. Feel free to use, modify, and distribute for commercial or personal projects.
-
-<p align="center">
-  <strong>⭐ Star this repo if you find it useful!</strong>
-</p>
+**Abdullah Al Raju**  
+- GitHub: [@Abdullah-Al-Raju](https://github.com/Abdullah-Al-Raju)  
+- Email: abdullahalraju33@gmail.com
