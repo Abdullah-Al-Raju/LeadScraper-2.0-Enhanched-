@@ -13,6 +13,7 @@
     <img src="https://img.shields.io/badge/Architecture-100%25%20Deterministic-blueviolet" alt="Deterministic">
     <img src="https://img.shields.io/badge/Cost-%240.00%20Zero--Cost-brightgreen" alt="Zero Cost">
     <img src="https://img.shields.io/badge/License-MIT-lightgrey" alt="License">
+    <a href="https://colab.research.google.com/github/Abdullah-Al-Raju/lead-scraper-falcon/blob/main/notebooks/LeadScraper_Falcon_Quickstart.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"></a>
   </p>
   <p align="center">
     <a href="#-10000-leads-mega-scale-benchmark-showdown">10k Leads Benchmark</a> •
