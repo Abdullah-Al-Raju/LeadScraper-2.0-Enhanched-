@@ -34,8 +34,8 @@ def extract_contacts(crawl_data, category=None):
     milli_contacts = crawl_data.get('milli_contacts', {})
     if milli_contacts:
         for em in milli_contacts.get('emails', []):
-            clean_em = em.rstrip('.,;:!?)>"\'')
-            if is_valid_email(clean_em) and clean_em not in contacts.get('email_addresses', []):
+            clean_em = em.lower().strip().rstrip('.,;:!?)>"\'')
+            if is_valid_email(clean_em) and clean_em not in [e.lower() for e in contacts.get('email_addresses', [])]:
                 contacts.setdefault('email_addresses', []).append(clean_em)
         for ph in milli_contacts.get('phones', []):
             formatted_p = format_phone(ph)
@@ -61,6 +61,11 @@ def extract_contacts(crawl_data, category=None):
             crawl_data.get('tel_links', [])
         )
         contacts = _merge_contacts(contacts, regex_contacts)
+        
+    # Extract address from text if not found in structured data
+    if not contacts.get('street_address'):
+        from modules.sources.search_result_extractor import _extract_addresses
+        _extract_addresses(crawl_data.get('combined_text', ''), contacts)
     
     # Try Tier 3 (Optional): OpenRouter Free Auto-Router
     if not _is_sufficient(contacts) and getattr(config, 'ENABLE_AI_FALLBACK', True):
@@ -232,8 +237,8 @@ def extract_with_regex(text, mailto_links=None, tel_links=None):
     for match in email_matches:
         if len(contacts['email_addresses']) >= max_emails:
             break
-        email = match.group(0).rstrip('.,;:!?)>"\'')
-        if is_valid_email(email) and email not in contacts['email_addresses']:
+        email = match.group(0).lower().strip().rstrip('.,;:!?)>"\'')
+        if is_valid_email(email) and email not in [e.lower() for e in contacts['email_addresses']]:
             contacts['email_addresses'].append(email)
     
     # Add mailto: links
@@ -241,8 +246,8 @@ def extract_with_regex(text, mailto_links=None, tel_links=None):
         for email in mailto_links:
             if len(contacts['email_addresses']) >= max_emails:
                 break
-            clean_email = email.rstrip('.,;:!?)>"\'')
-            if is_valid_email(clean_email) and clean_email not in contacts['email_addresses']:
+            clean_email = email.lower().strip().rstrip('.,;:!?)>"\'')
+            if is_valid_email(clean_email) and clean_email not in [e.lower() for e in contacts['email_addresses']]:
                 contacts['email_addresses'].append(clean_email)
     
     # Extract social media

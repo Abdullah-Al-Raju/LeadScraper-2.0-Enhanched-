@@ -187,12 +187,17 @@ def search_duckduckgo(query, max_results=10):
     Returns:
         List of search result dictionaries
     """
-    try:
-        if DDGS is None:
-            logger.error("DDGS module is not available")
-            return []
-        results = list(DDGS().text(query, max_results=max_results))
-        return results
-    except Exception as e:
-        logger.error(f"Search error: {e}")
+    if DDGS is None:
+        logger.error("DDGS module is not available")
         return []
+    for attempt in range(2):
+        try:
+            results = list(DDGS().text(query, max_results=max_results))
+            if results:
+                return results
+        except Exception as e:
+            if attempt == 0:
+                time.sleep(1.2)
+                continue
+            logger.debug(f"Search error for '{query}': {e}")
+    return []

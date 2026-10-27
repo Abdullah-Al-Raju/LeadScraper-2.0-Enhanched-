@@ -7,41 +7,26 @@ MAXIMUM EXTRACTION MODE - All possible patterns
 import re
 import requests
 from bs4 import BeautifulSoup
-from modules.utils import logger, is_valid_email, format_phone
+from modules.utils import (
+    logger, is_valid_email, format_phone,
+    is_valid_social_url, normalize_url, is_aggregator
+)
+from modules.search import is_result_relevant
 import config
 
 
 # ============================================================
-# MAXIMUM EXTRACTION PATTERNS
+# EXTRACTION PATTERNS
 # ============================================================
 
-# Phone number patterns (ALL formats)
-PHONE_PATTERNS = [
-    # Bangladesh formats
-    r'\+880\s*1[3-9]\d{8}',                          # +880 1712345678
-    r'880\s*1[3-9]\d{8}',                             # 880 1712345678
-    r'\b01[3-9]\d{8}\b',                              # 01712345678
-    r'\b0\d{10}\b',                                   # 01234567890
-    
-    # International formats
-    r'\+\d{1,4}\s*\(?\d{1,4}\)?\s*\d{3,}[-.\s]?\d{3,}[-.\s]?\d{2,}',  # +1 (234) 567-8900
-    r'\(\d{3}\)\s*\d{3}[-.\s]?\d{4}',                # (123) 456-7890
-    r'\b\d{3}[-.\s]\d{3}[-.\s]\d{4}\b',              # 123-456-7890
-    r'\b\d{3}\.\d{3}\.\d{4}\b',                      # 123.456.7890
-    r'\b\d{10,15}\b',                                 # 1234567890
-    
-    # With keywords
-    r'(?:phone|tel|call|mobile|contact|whatsapp|wa)[:|\s]+[\+\d][\d\s\-\(\)\.]{8,20}',
-    
-    # Special formats
-    r'\+\d+[-.\s]?\d+[-.\s]?\d+[-.\s]?\d+',          # +1-234-567-8900
-]
+# Phone number patterns (aligned with config)
+PHONE_PATTERNS = getattr(config, 'PHONE_PATTERNS', [
+    r'(?<![\d.])(?:\+?1[\s.-]?)?\(?([2-9][0-9]{2})\)?[\s.-]?([2-9][0-9]{2})[\s.-]?([0-9]{4})(?!\d)',
+    r'(?<![\d.])\+([1-9][0-9]{0,2})[\s.-]?\(?([0-9]{1,4})\)?[\s.-]?([0-9]{2,4})[\s.-]?([0-9]{2,4})(?:[\s.-]?([0-9]{2,4}))?(?!\d)',
+])
 
-# Email patterns (ALL formats)
-EMAIL_PATTERNS = [
-    r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b',  # Standard email
-    r'(?:email|e-mail|mail|contact)[:|\s]+[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}',
-]
+# Email patterns
+EMAIL_PATTERNS = [config.EMAIL_PATTERN]
 
 # Social media patterns (ALL platforms)
 SOCIAL_PATTERNS = {
@@ -72,17 +57,17 @@ SOCIAL_PATTERNS = {
 
 # Address patterns (ALL formats)
 ADDRESS_PATTERNS = [
-    # With keywords
-    r'(?:address|location|located at|find us|visit us)[:|\s]+([^\n]{10,150})',
+    # General pattern with city, state, zip
+    r'(\d+[^,\n]*,\s*[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*,\s*[A-Z]{2}\s*\d{5})',
     
-    # Street addresses
-    r'(\d+\s+[\w\s,]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr)[\w\s,]*)',
+    # Street addresses with house/street number (excluding AM/PM time expressions)
+    r'\b(\d{1,5}\s+(?!(?:am|pm|AM|PM|min|hour|st|nd|rd|th)\b)(?:[NSEW]\.?\s+)?[A-Za-z0-9\s,.-]+?\b(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Way|Court|Ct|Plaza|Plz)\b\.?(?:,\s*(?:Suite|Ste|Apt|Unit)\s*[A-Za-z0-9]+)?(?:[,\s\n]+[A-Za-z\s]+[,\s]+[A-Za-z]{2,10}\s*\d{5})?)',
+    
+    # With explicit keywords (must contain street digits)
+    r'(?:address|location|located at|find us|visit us)[:|\s]+([^\n]{10,150})',
     
     # Bangladesh format
     r'((?:House|H|Plot|P)[\s#]*\d+[,\s]+[\w\s,]{5,80})',
-    
-    # General pattern with city
-    r'(\d+[^,\n]*,\s*[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*,\s*[A-Z]{2}\s*\d{5})',
     
     # GPS coordinates
     r'(?:GPS|coordinates|lat|long)[:|\s]*([-+]?\d+\.\d+,\s*[-+]?\d+\.\d+)',
@@ -98,7 +83,7 @@ HOURS_PATTERNS = [
 
 # Owner/Manager patterns
 OWNER_PATTERNS = [
-    r'(?:owner|manager|chef|proprietor|founded by|by|contact person)[:|\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})',
+    r'(?:owner|founder|co-founder|manager|proprietor|ceo|president|contact person|founded by|owned by)[:|\s]+([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2})',
 ]
 
 # Delivery platform patterns
@@ -119,15 +104,8 @@ DELIVERY_PATTERNS = {
 
 def extract_from_search_results(business_name, location, category=None):
     """
-    Extract contact info FROM search result snippets (MAXIMUM mode)
-    
-    Args:
-        business_name: Business name or category
-        location: Location/city
-        category: Business category (optional)
-        
-    Returns:
-        Dictionary with extracted contact information
+    Extract contact info FROM search result snippets.
+    Uses targeted single-pass search with fallback to minimize rate limits.
     """
     logger.info(f"Extracting from search results for: {business_name} {location}")
     
@@ -135,38 +113,40 @@ def extract_from_search_results(business_name, location, category=None):
     data['business_name'] = business_name
     data['source_type'] = 'search_results'
     
-    # Try multiple search queries
-    queries = [
-        f'"{business_name}" "{location}" phone contact address',
-        f'"{business_name}" "{location}" email website',
-        f'"{business_name}" "{location}" facebook instagram',
-        f'{business_name} {location} hours location',
-    ]
+    # 1. Primary comprehensive search query
+    primary_query = f'"{business_name}" "{location}" contact phone email'
+    try:
+        results_data = _search_and_extract(primary_query, business_name=business_name)
+        if results_data:
+            data = _merge_search_data(data, results_data)
+    except Exception as e:
+        logger.debug(f"Primary search failed: {e}")
     
-    for query in queries:
+    # 2. Only if no contact info was found, try unquoted fallback
+    if not (data['phone_numbers'] or data['email_addresses']):
+        fallback_query = f'{business_name} {location} contact phone address'
         try:
-            results_data = _search_and_extract(query)
-            
+            results_data = _search_and_extract(fallback_query, business_name=business_name)
             if results_data:
                 data = _merge_search_data(data, results_data)
-                
         except Exception as e:
-            logger.debug(f"Search query failed: {e}")
+            logger.debug(f"Fallback search failed: {e}")
     
     # Return if we found anything useful
-    if data['phone_numbers'] or data['email_addresses'] or data['street_address']:
+    if data['phone_numbers'] or data['email_addresses'] or data['street_address'] or data['website']:
         logger.info(f"Extracted from search results: {len(data['phone_numbers'])} phones, {len(data['email_addresses'])} emails")
         return data
     
     return None
 
 
-def _search_and_extract(query):
+def _search_and_extract(query, business_name=None):
     """
-    Search and extract data from result snippets (MAXIMUM extraction)
+    Search and extract data from result snippets
     
     Args:
         query: Search query
+        business_name: Name of target business
         
     Returns:
         Dictionary with extracted data
@@ -180,6 +160,7 @@ def _search_and_extract(query):
             return None
         
         data = _empty_contacts()
+        data['business_name'] = business_name
         
         for result in results:
             title = result.get('title', '')
@@ -187,7 +168,11 @@ def _search_and_extract(query):
             url = result.get('href', '') or result.get('link', '')
             combined_text = f"{title} {snippet} {url}"
             
-            # Extract EVERYTHING
+            # Extract official website if relevant and not aggregator
+            if not data.get('website') and url and not is_aggregator(url):
+                if is_result_relevant(url, title, business_name or data.get('business_name', '')):
+                    data['website'] = normalize_url(url)
+            
             _extract_phones(combined_text, data)
             _extract_emails(combined_text, data)
             _extract_social_media(combined_text, data)
@@ -196,7 +181,9 @@ def _search_and_extract(query):
             _extract_owner(combined_text, data)
             _extract_delivery_platforms(combined_text, data)
         
-        return data if (data['phone_numbers'] or data['email_addresses']) else None
+        if data['phone_numbers'] or data['email_addresses'] or data['street_address'] or data['website']:
+            return data
+        return None
         
     except Exception as e:
         logger.debug(f"Error extracting from search results: {e}")
@@ -204,29 +191,27 @@ def _search_and_extract(query):
 
 
 def _extract_phones(text, data):
-    """Extract ALL phone number formats"""
+    """Extract phone number formats with NANP validation"""
     for pattern in PHONE_PATTERNS:
-        phones = re.findall(pattern, text, re.IGNORECASE)
-        for phone in phones:
-            formatted = format_phone(phone)
+        for match in re.finditer(pattern, text):
+            formatted = format_phone(match.group(0))
             if formatted and formatted not in data['phone_numbers']:
-                # Don't exceed limit
                 if len(data['phone_numbers']) < config.MAX_PHONES_PER_BUSINESS:
                     data['phone_numbers'].append(formatted)
 
 
 def _extract_emails(text, data):
-    """Extract ALL email formats"""
+    """Extract email formats with strict validation"""
     for pattern in EMAIL_PATTERNS:
-        emails = re.findall(pattern, text, re.IGNORECASE)
-        for email in emails:
+        for match in re.finditer(pattern, text):
+            email = match.group(0).rstrip('.,;:!?)>"\'')
             if is_valid_email(email) and email not in data['email_addresses']:
                 if len(data['email_addresses']) < config.MAX_EMAILS_PER_BUSINESS:
                     data['email_addresses'].append(email)
 
 
 def _extract_social_media(text, data):
-    """Extract ALL social media links"""
+    """Extract ALL social media links with validation"""
     social_count = 0
     
     for platform, patterns in SOCIAL_PATTERNS.items():
@@ -236,41 +221,67 @@ def _extract_social_media(text, data):
                 if social_count >= config.MAX_SOCIAL_LINKS:
                     return
                 
-                # Reconstruct URL
+                # Reconstruct URL and validate
                 if platform == 'facebook':
                     url = f"https://facebook.com/{match}"
-                    if not data.get('facebook'):
+                    if not data.get('facebook') and is_valid_social_url(url):
                         data['facebook'] = url
                         data['facebook_url'] = url
                         social_count += 1
                 elif platform == 'instagram':
                     url = f"https://instagram.com/{match}"
-                    if not data.get('instagram'):
+                    if not data.get('instagram') and is_valid_social_url(url):
                         data['instagram'] = url
                         data['instagram_url'] = url
                         social_count += 1
                 elif platform == 'twitter':
                     url = f"https://twitter.com/{match}"
-                    if not data.get('twitter'):
+                    if not data.get('twitter') and is_valid_social_url(url):
                         data['twitter'] = url
                         social_count += 1
                 elif platform == 'linkedin':
                     url = f"https://linkedin.com/company/{match}"
-                    if not data.get('linkedin'):
+                    if not data.get('linkedin') and is_valid_social_url(url):
                         data['linkedin'] = url
                         social_count += 1
                 elif platform == 'tiktok':
                     url = f"https://tiktok.com/@{match}"
-                    data['tiktok'] = url
-                    social_count += 1
+                    if not data.get('tiktok') and is_valid_social_url(url):
+                        data['tiktok'] = url
+                        social_count += 1
                 elif platform == 'whatsapp':
                     url = f"https://wa.me/{match}"
-                    data['whatsapp'] = url
-                    social_count += 1
+                    if not data.get('whatsapp'):
+                        data['whatsapp'] = url
+                        social_count += 1
                 elif platform == 'youtube':
                     url = f"https://youtube.com/{match}"
-                    data['youtube'] = url
-                    social_count += 1
+                    if not data.get('youtube') and is_valid_social_url(url):
+                        data['youtube'] = url
+                        social_count += 1
+
+
+def _clean_address(address: str) -> Optional[str]:
+    """Clean extracted address string and remove sentence trailing artifacts."""
+    if not address or not re.search(r'\d', address):
+        return None
+    # Remove any URLs
+    address = re.sub(r'https?://\S*', '', address).strip()
+    
+    # If there's a 5-digit zip code, cut off any non-address text following it
+    zip_match = re.search(r'^(.*?\b\d{5}(?:-\d{4})?\b)', address)
+    if zip_match:
+        address = zip_match.group(1).strip()
+    elif '. ' in address:
+        first_part = address.split('. ')[0].strip()
+        if len(first_part) >= 10 and (any(s in first_part for s in ['St', 'Street', 'Ave', 'Avenue', 'Rd', 'Road', 'Blvd', 'Dr', 'Way', 'Lane', 'Ln', 'Ct', 'Plaza', 'Suite', 'Ste', 'Apt', 'Unit']) or re.search(r'\b\d{5}\b', first_part)):
+            address = first_part
+            
+    # Clean whitespace and trailing punctuation
+    address = ' '.join(address.split()).rstrip('.,;:-')
+    if 10 <= len(address) <= 120 and re.search(r'\d', address):
+        return address
+    return None
 
 
 def _extract_addresses(text, data):
@@ -281,11 +292,10 @@ def _extract_addresses(text, data):
     for pattern in ADDRESS_PATTERNS:
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
-            address = match.group(1).strip()
-            # Clean up address
-            address = ' '.join(address.split())
-            if len(address) >= 10 and len(address) <= 150:
-                data['street_address'] = address
+            raw_addr = match.group(1).strip()
+            cleaned = _clean_address(raw_addr)
+            if cleaned:
+                data['street_address'] = cleaned
                 return
 
 
@@ -307,10 +317,14 @@ def _extract_owner(text, data):
     if data.get('owner_name'):
         return
     
+    stop_words = {'this', 'that', 'our', 'your', 'the', 'their', 'all', 'any', 'some', 'many', 'family', 'business'}
     for pattern in OWNER_PATTERNS:
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
             owner = match.group(1).strip()
+            words = owner.lower().split()
+            if any(w in stop_words for w in words):
+                continue
             data['owner_name'] = owner
             return
 
@@ -397,12 +411,12 @@ def extract_from_social_search(business_name, location, platform='facebook'):
             snippet = result.get('body', '') or result.get('description', '')
             combined_text = f"{title} {snippet} {url}"
             
-            # Store URL
-            if url and platform in url:
-                if platform == 'facebook':
+            # Store URL if it points to a valid business profile (not a post, media, or group)
+            if url and platform in url and is_valid_social_url(url):
+                if platform == 'facebook' and not data.get('facebook'):
                     data['facebook'] = url
                     data['facebook_url'] = url
-                else:
+                elif platform == 'instagram' and not data.get('instagram'):
                     data['instagram'] = url
                     data['instagram_url'] = url
             

@@ -598,20 +598,25 @@ async def _async_scrape_single_business(business_name: str, city: str = "", cate
     from modules.utils import calculate_completeness
     
     loop = asyncio.get_event_loop()
-    display.info(f"Searching official website for: {business_name} ({city})...")
-    website_url = await search_for_website(business_name, city)
-    
     sources_data = []
+    website_url = None
     
-    # 1. Search snippet extraction
+    # 1. Search snippet extraction (captures snippets, phone, email, address, and official site)
     try:
         search_contacts = await loop.run_in_executor(None, extract_from_search_results, business_name, city, category)
         if search_contacts:
             sources_data.append(search_contacts)
+            if search_contacts.get('website'):
+                website_url = search_contacts['website']
     except Exception as e:
         logger.debug(f"Search snippet extraction: {e}")
         
-    # 2. Crawl website with Milli
+    # 2. Search for official website only if not found in snippets
+    if not website_url:
+        display.info(f"Searching official website for: {business_name} ({city})...")
+        website_url = await search_for_website(business_name, city)
+        
+    # 3. Crawl website with Milli
     if website_url:
         display.info(f"Found website: {website_url}. Crawling with Milli...")
         crawl_data = await crawl_website(website_url, force_milli=force_milli)
@@ -621,14 +626,15 @@ async def _async_scrape_single_business(business_name: str, city: str = "", cate
             contacts['website'] = website_url
             sources_data.append(contacts)
             
-    # 3. Social search extraction (Facebook)
-    try:
-        fb_contacts = await loop.run_in_executor(None, extract_from_social_search, business_name, city, 'facebook')
-        if fb_contacts:
-            sources_data.append(fb_contacts)
-    except Exception:
-        pass
-        
+    # 4. Social search (Facebook) only if not already discovered
+    if not any(s.get('facebook') for s in sources_data):
+        try:
+            fb_contacts = await loop.run_in_executor(None, extract_from_social_search, business_name, city, 'facebook')
+            if fb_contacts:
+                sources_data.append(fb_contacts)
+        except Exception:
+            pass
+            
     if not sources_data:
         return {'business_name': business_name, 'city': city, 'confidence_score': 0}
         
@@ -671,6 +677,8 @@ def run_cli_discovery(location, quantity, category, local_mode=False, output_fil
             if lead:
                 leads.append(lead)
                 print_lead_summary(lead)
+            if idx < len(businesses):
+                time.sleep(1.0)
                 
         out_path = output_file or "output/leads.json"
         if out_path.endswith('.csv'):

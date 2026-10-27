@@ -421,12 +421,25 @@ def is_valid_social_url(url):
         return False
     try:
         parsed = urlparse(url)
+        if parsed.scheme not in ('http', 'https'):
+            return False
+            
+        domain = parsed.netloc.lower()
+        if not domain:
+            return False
+            
+        valid_social_domains = (
+            'facebook.com', 'fb.me', 'instagram.com', 'twitter.com', 'x.com',
+            'linkedin.com', 'youtube.com', 'youtu.be', 'tiktok.com', 'wa.me'
+        )
+        if not any(domain == d or domain.endswith('.' + d) for d in valid_social_domains):
+            return False
+            
         path = parsed.path.strip('/')
         parts = [p.lower() for p in path.split('/') if p]
         if not parts:
             return False
             
-        first_segment = parts[0]
         dummy_segments = {
             'sharer', 'sharer.php', 'share', 'intent', 'dialog', 'privacy', 'terms', 'help',
             'squarespace', 'wordpress', 'shopify', 'wix', 'wixpress', 'weebly',
@@ -435,11 +448,17 @@ def is_valid_social_url(url):
             'p', 'explore', 'stories', 'reel', 'reels', 'feed', 'watch'
         }
         
+        # Reject individual posts, photos, videos, events, or groups (not profile pages)
+        media_segments = {'posts', 'post', 'photos', 'photo', 'videos', 'video', 'events', 'groups', 'stories', 'reel', 'reels', 'channel'}
+        if any(seg in media_segments for seg in parts):
+            return False
+            
+        first_segment = parts[0]
         if first_segment in dummy_segments:
             return False
             
-        if first_segment in ('pages', 'groups', 'company', 'in'):
-            if len(parts) > 1 and parts[1] not in dummy_segments:
+        if first_segment in ('pages', 'company', 'in'):
+            if len(parts) > 1 and parts[1] not in dummy_segments and parts[1] not in media_segments:
                 first_segment = parts[1]
             else:
                 return False
@@ -451,6 +470,34 @@ def is_valid_social_url(url):
         return len(first_segment) >= 2
     except Exception:
         return False
+
+
+def is_waf_blocked(html="", text=""):
+    """
+    Detect if crawled content is an anti-bot challenge or firewall block page.
+    Prevents firewall error pages from polluting lead profiles.
+    """
+    if not html and not text:
+        return False
+    sample = f"{str(text)[:1500]} {str(html)[:1500]}".lower()
+    waf_indicators = [
+        "access denied - godaddy website firewall",
+        "attention required! | cloudflare",
+        "just a moment...",
+        "cf-chl-bypass",
+        "sucuri webproxy",
+        "access denied - sucuri",
+        "forbidden - access to this website is blocked",
+        "please verify you are a human",
+        "request blocked by security policy",
+        "security block",
+        "incapsula incident id",
+        "datadome",
+        "waf protection",
+        "403 forbidden",
+        "blocked by firewall"
+    ]
+    return any(ind in sample for ind in waf_indicators)
 
 
 # ============================================================

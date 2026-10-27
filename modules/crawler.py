@@ -20,7 +20,7 @@ from bs4 import BeautifulSoup
 import config
 from modules.utils import (
     logger, can_fetch_url,
-    extract_visible_text, normalize_url, is_valid_social_url
+    extract_visible_text, normalize_url, is_valid_social_url, is_waf_blocked
 )
 from modules.http_client import AsyncHTTPClient
 from modules.rate_limiter import rate_limiter
@@ -113,6 +113,11 @@ async def _crawl_with_milli(url: str, max_contact_pages: int = 2) -> Optional[Di
         res = await scraper.scrape_url(url, triage=True)
         html = res.get("html") or res.get("metadata", {}).get("raw_html", "")
         markdown = res.get("markdown", "")
+        
+        # Check if WAF blocked or access denied
+        if is_waf_blocked(html, markdown):
+            logger.warning(f"WAF or Access Denied detected on {url}. Bypassing invalid content.")
+            return None
         
         soup = BeautifulSoup(html, 'lxml') if html else None
         
@@ -298,6 +303,9 @@ async def _fetch_page(url: str, http: AsyncHTTPClient) -> Optional[Dict[str, Any
         
         soup = BeautifulSoup(response.content, 'lxml')
         text = extract_visible_text(soup)
+        if is_waf_blocked(response.text, text):
+            logger.warning(f"WAF or Access Denied detected on {url} (HTTPX). Bypassing.")
+            return None
         structured_data = _extract_structured_data(soup)
         mailto_links = _extract_mailto_links(soup)
         tel_links = _extract_tel_links(soup)
@@ -452,19 +460,22 @@ def _extract_social_links(soup: BeautifulSoup) -> Dict[str, Optional[str]]:
         if not is_valid_social_url(href):
             continue
             
-        if 'facebook.com' in href_lower and not social_links['facebook']:
+        parsed_href = urlparse(href)
+        netloc = parsed_href.netloc.lower()
+        
+        if ('facebook.com' in netloc or 'fb.me' in netloc) and not social_links['facebook']:
             social_links['facebook'] = href
-        elif 'instagram.com' in href_lower and not social_links['instagram']:
+        elif 'instagram.com' in netloc and not social_links['instagram']:
             social_links['instagram'] = href
-        elif ('twitter.com' in href_lower or 'x.com' in href_lower) and not social_links['twitter']:
+        elif ('twitter.com' in netloc or netloc == 'x.com' or netloc.endswith('.x.com')) and not social_links['twitter']:
             social_links['twitter'] = href
-        elif 'linkedin.com' in href_lower and not social_links['linkedin']:
+        elif 'linkedin.com' in netloc and not social_links['linkedin']:
             social_links['linkedin'] = href
-        elif ('youtube.com' in href_lower or 'youtu.be' in href_lower) and not social_links['youtube']:
+        elif ('youtube.com' in netloc or 'youtu.be' in netloc) and not social_links['youtube']:
             social_links['youtube'] = href
-        elif 'tiktok.com' in href_lower and not social_links['tiktok']:
+        elif 'tiktok.com' in netloc and not social_links['tiktok']:
             social_links['tiktok'] = href
-        elif ('wa.me' in href_lower or 'api.whatsapp.com' in href_lower or 'whatsapp:' in href_lower) and not social_links['whatsapp']:
+        elif ('wa.me' in netloc or 'whatsapp' in netloc) and not social_links['whatsapp']:
             social_links['whatsapp'] = href
     
     return social_links

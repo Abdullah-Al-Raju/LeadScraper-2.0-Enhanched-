@@ -28,8 +28,15 @@ def merge_multi_source_data(sources_data):
     if not sources_data:
         return None
     
-    # Filter out None/empty sources
-    valid_sources = [s for s in sources_data if s and (s.get('business_name') or s.get('phone_numbers') or s.get('email_addresses'))]
+    # Filter out None/empty sources (accept sources containing contacts, website, or address)
+    valid_sources = [
+        s for s in sources_data if s and any(
+            s.get(f) for f in [
+                'business_name', 'phone_numbers', 'email_addresses',
+                'street_address', 'website', 'facebook', 'instagram', 'twitter', 'linkedin'
+            ]
+        )
+    ]
     
     if not valid_sources:
         return None
@@ -89,9 +96,11 @@ def merge_multi_source_data(sources_data):
             field_sources['phone_numbers'][phone].append(source_type)
         
         for email in source_data.get('email_addresses', []):
-            if email not in field_sources['email_addresses']:
-                field_sources['email_addresses'][email] = []
-            field_sources['email_addresses'][email].append(source_type)
+            clean_email = str(email).lower().strip()
+            if clean_email:
+                if clean_email not in field_sources['email_addresses']:
+                    field_sources['email_addresses'][clean_email] = []
+                field_sources['email_addresses'][clean_email].append(source_type)
     
     # Merge fields with conflict resolution
     merged['business_name'] = _resolve_single_field(field_sources['business_name'])
