@@ -41,12 +41,8 @@
   <img src="https://img.shields.io/badge/Topic-Zero--Cost%20Deterministic-0891b2?style=for-the-badge&logo=python" alt="Zero-Cost">
 </p>
 
-### 🏷️ Topic Tags & Domain Coverage
-`lead-generation` • `b2b-leads` • `web-scraper` • `crawler` • `anti-bot` • `cloudflare-bypass` • `data-mining` • `email-extractor` • `phone-extractor` • `social-media-crawler` • `impressum-crawler` • `osint` • `business-intelligence` • `v8-microtasks` • `deterministic-ai` • `zero-cost` • `python` • `asyncio`
 
----
-
-### 🎯 Mission & Overview
+### 🎯 Overview
 **LeadScraper Falcon** is an open-source, production-grade autonomous business intelligence and high-speed B2B lead generation engine. Engineered at the intersection of high-concurrency network engineering, deterministic data fusion, and in-memory browser automation, Falcon eliminates the need for expensive data brokers (ZoomInfo, Apollo, Apollo API credits), fragile single-threaded scrapers, and manual sales research.
 
 Powered by the **Milli Universal Engine**, Falcon extracts, deobfuscates, verifies, and corroborates business leads across websites, search matrices, legal Impressum disclosures, and social platforms at a verified world-record speed of **561 leads/second (10,000 leads in 17.82 seconds)** with **$0.00 in compute and API costs**.
