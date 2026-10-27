@@ -55,6 +55,34 @@ async def search_for_website(business_name, city=""):
     return url
 
 
+def is_result_relevant(url: str, title: str, business_name: str) -> bool:
+    """Verifies that the search result title or domain has lexical relevance to the business."""
+    if not business_name or not url:
+        return False
+    import re
+    from urllib.parse import urlparse
+    biz_lower = business_name.lower().strip()
+    title_lower = title.lower() if title else ""
+    domain = urlparse(url).netloc.replace('www.', '').lower()
+    
+    # 1. Does the title mention key words of the business?
+    stopwords = {'the', 'and', 'inc', 'llc', 'ltd', 'company', 'services', 'co'}
+    biz_words = [w for w in re.split(r'[^a-z0-9]', biz_lower) if len(w) >= 3 and w not in stopwords]
+    
+    if not biz_words:
+        return True
+        
+    if any(w in title_lower for w in biz_words):
+        return True
+        
+    # 2. Does the domain contain any key business words?
+    domain_clean = re.sub(r'[^a-z0-9]', '', domain)
+    if any(w in domain_clean for w in biz_words):
+        return True
+        
+    return False
+
+
 async def _search_with_query(business_name, city="", include_contact=True):
     """
     Perform search with constructed query (ASYNC)
@@ -95,6 +123,7 @@ async def _search_with_query(business_name, city="", include_contact=True):
         # Filter and validate results
         for result in results:
             url = result.get('href') or result.get('link')
+            title = result.get('title', '')
             
             if not url:
                 continue
@@ -106,8 +135,13 @@ async def _search_with_query(business_name, city="", include_contact=True):
             if is_aggregator(url):
                 logger.debug(f"Skipping aggregator: {url}")
                 continue
+                
+            # Verify lexical relevance to target business
+            if not is_result_relevant(url, title, business_name):
+                logger.debug(f"Skipping irrelevant search match: {url} (Title: {title})")
+                continue
             
-            # Found valid URL!
+            # Found valid, verified URL!
             logger.info(f"Found website: {url}")
             return url
         

@@ -133,30 +133,30 @@ def run_pipeline():
             
             # Extract discovery parameters from first row
             location = rows[0]['city']
-            category = rows[0].get('category', 'restaurant') or 'restaurant'
+            category = rows[0].get('category', 'business') or 'business'
             quantity = config.DEFAULT_DISCOVERY_QUANTITY
             
             logger.info(f"Starting discovery: {quantity} {category}s in {location}")
             
-            # Discover restaurants
-            from modules.restaurant_discovery import discover_restaurants
-            restaurants = discover_restaurants(location, quantity, category)
+            # Discover businesses
+            from modules.discovery import discover_businesses
+            discovered = discover_businesses(location, quantity, category)
             
-            if not restaurants:
-                logger.warning("No restaurants discovered")
+            if not discovered:
+                logger.warning("No businesses discovered")
                 return
             
-            logger.info(f"Discovered {len(restaurants)} restaurants with contact info")
+            logger.info(f"Discovered {len(discovered)} businesses with contact info")
             
             # Auto-manage sheets
             if config.AUTO_CLEAR_INPUT_ON_DISCOVERY:
                 from modules.sheets import clear_input_sheet, populate_input_sheet
                 clear_input_sheet(sheet)
-                populate_input_sheet(sheet, restaurants)
+                populate_input_sheet(sheet, discovered)
             
             # Reload rows
             rows = get_unprocessed_rows(sheet)
-            logger.info(f"Proceeding to process {len(rows)} discovered restaurants")
+            logger.info(f"Proceeding to process {len(rows)} discovered businesses")
         
         # Initialize progress tracker
         progress = ProgressTracker(len(rows))
@@ -513,8 +513,8 @@ def parse_args():
     parser.add_argument(
         '--category',
         type=str,
-        default='restaurant',
-        help='Business category (default: restaurant)'
+        default='business',
+        help='Business category (default: business, e.g., plumber, dentist, coffee, saas, restaurant)'
     )
 
     parser.add_argument(
@@ -646,26 +646,27 @@ def run_cli_discovery(location, quantity, category, local_mode=False, output_fil
     """
     Run discovery mode from CLI. Supports both Google Sheets and Local Export.
     """
-    from modules.restaurant_discovery import discover_restaurants
+    from modules.discovery import discover_businesses
     from modules.local_exporter import export_to_csv, export_to_json, print_lead_summary
     
-    display.section_header(f"DISCOVERY MODE: {quantity} {category}s in {location}")
-    display.ai(f"Discovering {quantity} {category}s...")
+    cat_label = category or "business"
+    display.section_header(f"DISCOVERY MODE: {quantity} {cat_label}s in {location}")
+    display.ai(f"Discovering {quantity} {cat_label}s...")
     
-    restaurants = discover_restaurants(location, quantity, category)
-    if not restaurants:
+    businesses = discover_businesses(location, quantity, category)
+    if not businesses:
         display.error("Discovery failed - no businesses found")
         sys.exit(1)
         
-    display.success(f"Discovered {len(restaurants)} businesses!")
+    display.success(f"Discovered {len(businesses)} businesses!")
 
     if local_mode or output_file:
         display.info("Running local extraction with Milli...")
         leads = []
-        for idx, item in enumerate(restaurants, 1):
+        for idx, item in enumerate(businesses, 1):
             name = item.get('name') or item.get('business_name') or item.get('search_term')
             city = item.get('city') or location
-            display.info(f"[{idx}/{len(restaurants)}] Processing: {name} ({city})")
+            display.info(f"[{idx}/{len(businesses)}] Processing: {name} ({city})")
             lead = asyncio.run(_async_scrape_single_business(name, city=city, category=category, force_milli=force_milli))
             if lead:
                 leads.append(lead)
@@ -688,9 +689,9 @@ def run_cli_discovery(location, quantity, category, local_mode=False, output_fil
         display.info("Clearing input sheet for fresh start...")
         clear_input_sheet(workbook)
         
-    display.info(f"Populating input sheet with {len(restaurants)} businesses...")
-    populate_input_sheet(workbook, restaurants)
-    display.section_header(f"DISCOVERY COMPLETE: {len(restaurants)} businesses added")
+    display.info(f"Populating input sheet with {len(businesses)} businesses...")
+    populate_input_sheet(workbook, businesses)
+    display.section_header(f"DISCOVERY COMPLETE: {len(businesses)} businesses added")
     run_pipeline()
 
 

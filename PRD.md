@@ -162,7 +162,7 @@ d:\Scrapper\
 │   ├── crawler.py                  # Website crawling (Milli-Scrapes engine)
 │   ├── extractor.py                # Deterministic contact extraction & Cloudflare deobfuscation
 │   ├── fusion.py                   # Bayesian data fusion & confidence scoring
-│   ├── restaurant_discovery.py     # Deterministic business discovery
+│   ├── discovery.py                # Universal dynamic business discovery (any niche)
 │   └── sources/
 │       ├── facebook_scraper.py     # Facebook extraction
 │       ├── instagram_scraper.py    # Instagram extraction

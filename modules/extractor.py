@@ -9,7 +9,7 @@ import requests
 import config
 from modules.utils import (
     logger, truncate_text, is_valid_email,
-    format_phone, retry_on_failure
+    format_phone, is_valid_social_url, retry_on_failure
 )
 
 
@@ -34,15 +34,23 @@ def extract_contacts(crawl_data, category=None):
     milli_contacts = crawl_data.get('milli_contacts', {})
     if milli_contacts:
         for em in milli_contacts.get('emails', []):
-            if is_valid_email(em) and em not in contacts.get('email_addresses', []):
-                contacts.setdefault('email_addresses', []).append(em)
+            clean_em = em.rstrip('.,;:!?)>"\'')
+            if is_valid_email(clean_em) and clean_em not in contacts.get('email_addresses', []):
+                contacts.setdefault('email_addresses', []).append(clean_em)
         for ph in milli_contacts.get('phones', []):
             formatted_p = format_phone(ph)
-            if formatted_p and formatted_p not in contacts.get('phone_numbers', []):
-                contacts.setdefault('phone_numbers', []).append(formatted_p)
+            if formatted_p:
+                combined = crawl_data.get('combined_text', '')
+                if combined and len(combined) > 100:
+                    digits = re.sub(r'\D', '', formatted_p)
+                    combined_digits = re.sub(r'\D', '', combined)
+                    if digits[-10:] not in combined_digits and formatted_p not in combined:
+                        continue
+                if formatted_p not in contacts.get('phone_numbers', []):
+                    contacts.setdefault('phone_numbers', []).append(formatted_p)
         for k, v in milli_contacts.get('social_media', {}).items():
             target_k = 'twitter' if k == 'twitter_x' else k
-            if v and not contacts.get(target_k):
+            if v and is_valid_social_url(v) and not contacts.get(target_k):
                 contacts[target_k] = v
     
     # Try Tier 2: Regex & Cloudflare XOR Engine
@@ -72,8 +80,9 @@ def extract_contacts(crawl_data, category=None):
     # Add social links
     social = crawl_data.get('social_links', {})
     for platform in ['facebook', 'instagram', 'twitter', 'linkedin', 'youtube', 'tiktok', 'whatsapp']:
-        if not contacts.get(platform) and social.get(platform):
-            contacts[platform] = social.get(platform)
+        val = social.get(platform)
+        if not contacts.get(platform) and val and is_valid_social_url(val):
+            contacts[platform] = val
     
     # Add website
     if not contacts.get('website'):
@@ -196,14 +205,15 @@ def extract_with_regex(text, mailto_links=None, tel_links=None):
     contacts = _empty_contacts()
     
     # Extract phone numbers
+    max_phones = getattr(config, 'MAX_PHONES_PER_BUSINESS', 5)
+    max_emails = getattr(config, 'MAX_EMAILS_PER_BUSINESS', 5)
+
     for pattern in config.PHONE_PATTERNS:
-        matches = re.findall(pattern, text)
+        matches = re.finditer(pattern, text)
         for match in matches:
-            if isinstance(match, tuple):
-                phone = ''.join(match)
-            else:
-                phone = match
-            
+            if len(contacts['phone_numbers']) >= max_phones:
+                break
+            phone = match.group(0)
             formatted = format_phone(phone)
             if formatted and formatted not in contacts['phone_numbers']:
                 contacts['phone_numbers'].append(formatted)
@@ -211,27 +221,35 @@ def extract_with_regex(text, mailto_links=None, tel_links=None):
     # Add tel: links
     if tel_links:
         for phone in tel_links:
+            if len(contacts['phone_numbers']) >= max_phones:
+                break
             formatted = format_phone(phone)
             if formatted and formatted not in contacts['phone_numbers']:
                 contacts['phone_numbers'].append(formatted)
     
     # Extract emails
-    email_matches = re.findall(config.EMAIL_PATTERN, text)
-    for email in email_matches:
+    email_matches = re.finditer(config.EMAIL_PATTERN, text)
+    for match in email_matches:
+        if len(contacts['email_addresses']) >= max_emails:
+            break
+        email = match.group(0).rstrip('.,;:!?)>"\'')
         if is_valid_email(email) and email not in contacts['email_addresses']:
             contacts['email_addresses'].append(email)
     
     # Add mailto: links
     if mailto_links:
         for email in mailto_links:
-            if is_valid_email(email) and email not in contacts['email_addresses']:
-                contacts['email_addresses'].append(email)
+            if len(contacts['email_addresses']) >= max_emails:
+                break
+            clean_email = email.rstrip('.,;:!?)>"\'')
+            if is_valid_email(clean_email) and clean_email not in contacts['email_addresses']:
+                contacts['email_addresses'].append(clean_email)
     
     # Extract social media
     for platform, pattern in config.SOCIAL_PATTERNS.items():
         if not contacts.get(platform):
             match = re.search(pattern, text, re.IGNORECASE)
-            if match:
+            if match and is_valid_social_url(match.group(0)):
                 contacts[platform] = match.group(0)
     
     logger.info(f"Regex extraction: {len(contacts['phone_numbers'])} phones, {len(contacts['email_addresses'])} emails")

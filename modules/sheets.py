@@ -341,15 +341,15 @@ def clear_input_sheet(sheet):
         logger.error(f"Error clearing input sheet: {e}")
 
 
-def populate_input_sheet(sheet, restaurants):
-    """Auto-populate input sheet with discovered restaurants"""
+def populate_input_sheet(sheet, businesses):
+    """Auto-populate input sheet with discovered businesses"""
     try:
         worksheet = sheet.worksheet(config.INPUT_TAB_NAME)
-        rows = [[r['name'], r['location'], ''] for r in restaurants]
+        rows = [[r['name'], r['location'], ''] for r in businesses]
         
         if rows:
             worksheet.append_rows(rows, value_input_option='USER_ENTERED')
-            logger.info(f"Populated input sheet with {len(rows)} restaurants")
+            logger.info(f"Populated input sheet with {len(rows)} businesses")
     except Exception as e:
         logger.error(f"Error populating input sheet: {e}")
 

@@ -73,7 +73,7 @@ REQUIRE_CROSS_VERIFICATION = False  # require 2+ sources for verification
 # ============================================================
 # DISCOVERY MODE CONFIGURATION
 # ============================================================
-ENABLE_DISCOVERY_MODE = True   # enable restaurant discovery mode
+ENABLE_DISCOVERY_MODE = True   # enable business discovery mode
 DEFAULT_DISCOVERY_QUANTITY = 100  # default number to discover
 MAX_DISCOVERY_QUANTITY = 500   # maximum allowed
 
@@ -127,6 +127,14 @@ AGGREGATOR_DOMAINS = [
     "justdial.com", "sulekha.com", "manta.com",
     "chamberofcommerce.com", "hotfrog.com",
     "brownbook.net", "cybo.com", "infobel.com",
+    "bdplaces.com", "trustpilot.com", "capterra.com", "g2.com",
+    # Editorial, guides & listicle blogs
+    "theinfatuation.com", "eater.com", "timeout.com", "thrillist.com",
+    "grokipedia.com", "citysearch.com", "expertise.com", "clutch.co",
+    "upcity.com", "goodfirms.co",
+    # Lead databases & intelligence tools
+    "contactout.com", "zoominfo.com", "rocketreach.co", "apollo.io",
+    "lusha.com", "crunchbase.com", "dnb.com", "seamless.ai",
 ]
 
 # ============================================================
@@ -149,10 +157,10 @@ CONTACT_ANCHOR_KEYWORDS = [
 # EXTRACTION PATTERNS
 # ============================================================
 
-# Phone number patterns (flexible for various formats)
+# Phone number patterns (NANP & international with strict non-digit/non-dot boundaries)
 PHONE_PATTERNS = [
-    r'\+?1?\s*\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})',
-    r'\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})',
+    r'(?<![\d./\-_])(?:\+?1[\s.-]?)?\(?([2-9][0-9]{2})\)?[\s.-]?([2-9][0-9]{2})[\s.-]?([0-9]{4})(?![\d./\-_])',
+    r'(?<![\d./\-_])\+([1-9][0-9]{0,2})[\s.-]?\(?([0-9]{1,4})\)?[\s.-]?([0-9]{2,4})[\s.-]?([0-9]{2,4})(?:[\s.-]?([0-9]{2,4}))?(?![\d./\-_])',
 ]
 
 # Email pattern

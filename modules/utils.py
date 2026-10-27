@@ -320,7 +320,7 @@ def hash_business(name, city=""):
 
 def is_valid_email(email):
     """
-    Basic email validation with false positive filtering
+    Email validation with strict false positive filtering
     
     Args:
         email: Email address
@@ -331,62 +331,126 @@ def is_valid_email(email):
     if not email:
         return False
     
-    email_clean = email.lower().strip()
+    import re
+    email_clean = str(email).lower().strip().rstrip('.,;:!?)>"\'')
     
     # Exclude image/asset extensions commonly matched in HTML
     invalid_extensions = ('.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp', '.css', '.js', '.ico', '.woff', '.ttf')
     if email_clean.endswith(invalid_extensions):
         return False
     
-    # Exclude error tracking and generic tech provider domains
-    invalid_domains = ('sentry.io', 'wixpress.com', 'sentry-next.wixpress.com', 'google.com', 'schema.org')
+    # Exclude error tracking, generic tech provider, and placeholder template domains
+    invalid_domains = (
+        'sentry.io', 'wixpress.com', 'sentry-next.wixpress.com', 'google.com', 'schema.org',
+        'domain.com', 'yourdomain.com', 'test.com', 'sample.com', 'placeholder.com'
+    )
     if any(email_clean.endswith('@' + d) or email_clean.endswith('.' + d) for d in invalid_domains):
         return False
         
-    # Exclude noreply and automated emails
-    invalid_prefixes = ['noreply', 'no-reply', 'donotreply', 'mailer-daemon']
+    # Exclude noreply, placeholder, and automated emails
+    invalid_prefixes = ('noreply@', 'no-reply@', 'donotreply@', 'mailer-daemon@', 'placeholder@', 'user@', 'email@', 'name@', 'yourname@', 'test@')
     if any(email_clean.startswith(prefix) for prefix in invalid_prefixes):
         return False
     
-    # Basic format check
-    import re
-    pattern = config.EMAIL_PATTERN
+    # Exclude exact placeholder emails
+    if email_clean in ('email@domain.com', 'user@domain.com', 'name@domain.com'):
+        return False
+
+    # Format check - anchored regex
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return bool(re.match(pattern, email_clean))
 
 
 def format_phone(phone):
     """
-    Format phone number to (XXX) XXX-XXXX format
+    Format phone number to (XXX) XXX-XXXX format with NANP validation
     
     Args:
         phone: Raw phone number string
         
     Returns:
-        Formatted phone number
+        Formatted phone number or None if invalid
     """
     if not phone:
-        return ""
+        return None
     
-    # Remove all non-digits
     import re
-    digits = re.sub(r'\D', '', phone)
+    raw_str = str(phone).strip()
+    digits = re.sub(r'\D', '', raw_str)
     
-    # Reject strings with insufficient digits or repetitive dummy numbers
-    if len(digits) < 7:
+    # Reject strings with invalid length or repetitive dummy numbers
+    if len(digits) < 10 or len(digits) > 15:
         return None
     if len(set(digits)) <= 1:
         return None
     
-    # Handle US phone numbers (10 digits)
+    # Handle US/NANP phone numbers (10 digits)
     if len(digits) == 10:
+        ac = digits[:3]
+        # NANP area code rules: cannot start with 0 or 1, middle digit cannot be 9, cannot be N11 or N00
+        if ac[0] in ('0', '1') or ac[1] == '9' or ac[1:] in ('11', '00'):
+            return None
         return f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"
     
     # Handle with country code (11 digits, starting with 1)
     if len(digits) == 11 and digits[0] == '1':
+        ac = digits[1:4]
+        if ac[0] in ('0', '1') or ac[1] == '9' or ac[1:] in ('11', '00'):
+            return None
         return f"({digits[1:4]}) {digits[4:7]}-{digits[7:]}"
+        
+    # International numbers MUST start with '+'
+    if raw_str.startswith('+'):
+        return raw_str
+        
+    return None
+
+
+def is_valid_social_url(url):
+    """
+    Validate that a social media URL points to an authentic business profile,
+    filtering out platform chrome, vendor handles, share dialogs, and numeric paths.
     
-    # Return as-is if not standard format
-    return phone
+    Args:
+        url: Social media URL string
+        
+    Returns:
+        Boolean indicating if URL is an authentic business profile
+    """
+    if not url:
+        return False
+    try:
+        parsed = urlparse(url)
+        path = parsed.path.strip('/')
+        parts = [p.lower() for p in path.split('/') if p]
+        if not parts:
+            return False
+            
+        first_segment = parts[0]
+        dummy_segments = {
+            'sharer', 'sharer.php', 'share', 'intent', 'dialog', 'privacy', 'terms', 'help',
+            'squarespace', 'wordpress', 'shopify', 'wix', 'wixpress', 'weebly',
+            'facebook', 'instagram', 'twitter', 'linkedin', 'youtube', 'tiktok',
+            'home', 'about', 'contact', 'login', 'signup', 'register', 'settings',
+            'p', 'explore', 'stories', 'reel', 'reels', 'feed', 'watch'
+        }
+        
+        if first_segment in dummy_segments:
+            return False
+            
+        if first_segment in ('pages', 'groups', 'company', 'in'):
+            if len(parts) > 1 and parts[1] not in dummy_segments:
+                first_segment = parts[1]
+            else:
+                return False
+                
+        # Reject purely numeric IDs (like /2008)
+        if first_segment.isdigit():
+            return False
+            
+        return len(first_segment) >= 2
+    except Exception:
+        return False
 
 
 # ============================================================

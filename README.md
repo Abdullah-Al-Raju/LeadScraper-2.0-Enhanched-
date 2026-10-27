@@ -328,7 +328,7 @@ lead-scraper-falcon/
 │   ├── fusion.py                           ← Data fusion & confidence scoring
 │   ├── local_exporter.py                   ← Standalone CSV, JSON & terminal cards
 │   ├── async_pipeline.py                   ← High-throughput parallel worker pool
-│   ├── restaurant_discovery.py             ← Intelligent discovery heuristics
+│   ├── discovery.py                        ← Intelligent dynamic business discovery (any niche)
 │   ├── search.py                           ← Multi-engine search & aggregator filter
 │   ├── sheets.py                           ← Google Sheets cloud integration
 │   ├── http_client.py                      ← Resilient HTTP client with backoff

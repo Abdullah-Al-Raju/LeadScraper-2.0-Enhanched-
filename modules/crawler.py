@@ -20,7 +20,7 @@ from bs4 import BeautifulSoup
 import config
 from modules.utils import (
     logger, can_fetch_url,
-    extract_visible_text, normalize_url
+    extract_visible_text, normalize_url, is_valid_social_url
 )
 from modules.http_client import AsyncHTTPClient
 from modules.rate_limiter import rate_limiter
@@ -120,18 +120,15 @@ async def _crawl_with_milli(url: str, max_contact_pages: int = 2) -> Optional[Di
         tel_links = _extract_tel_links(soup) if soup else []
         social_links = _extract_social_links(soup) if soup else _empty_social_links()
         
-        # Merge Milli contact discoveries
+        # Merge Milli contact discoveries (social media handles validated)
         milli_contacts = res.get("contacts", {})
-        if milli_contacts.get("emails"):
-            mailto_links.extend(milli_contacts["emails"])
-        if milli_contacts.get("phones"):
-            tel_links.extend(milli_contacts["phones"])
         if milli_contacts.get("social_media"):
             m_soc = milli_contacts["social_media"]
             for k in ("facebook", "instagram", "twitter_x", "linkedin", "youtube", "tiktok"):
                 target_k = "twitter" if k == "twitter_x" else k
-                if m_soc.get(k) and not social_links.get(target_k):
-                    social_links[target_k] = m_soc[k]
+                s_val = m_soc.get(k)
+                if s_val and is_valid_social_url(s_val) and not social_links.get(target_k):
+                    social_links[target_k] = s_val
             
         structured_data = _extract_structured_data(soup) if soup else []
         if res.get("tables"):
@@ -172,18 +169,14 @@ async def _crawl_with_milli(url: str, max_contact_pages: int = 2) -> Optional[Di
                     
                     sub_mails = _extract_mailto_links(sub_soup) if sub_soup else []
                     sub_tels = _extract_tel_links(sub_soup) if sub_soup else []
-                    if sub_res.get("contacts", {}).get("emails"):
-                        sub_mails.extend(sub_res["contacts"]["emails"])
-                    if sub_res.get("contacts", {}).get("phones"):
-                        sub_tels.extend(sub_res["contacts"]["phones"])
-                        
                     sub_social = _extract_social_links(sub_soup) if sub_soup else {}
                     if sub_res.get("contacts", {}).get("social_media"):
                         sub_soc = sub_res["contacts"]["social_media"]
                         for k in ("facebook", "instagram", "twitter_x", "linkedin", "youtube", "tiktok"):
                             target_k = "twitter" if k == "twitter_x" else k
-                            if sub_soc.get(k) and not sub_social.get(target_k):
-                                sub_social[target_k] = sub_soc[k]
+                            s_val = sub_soc.get(k)
+                            if s_val and is_valid_social_url(s_val) and not sub_social.get(target_k):
+                                sub_social[target_k] = s_val
                     
                     return {
                         "url": sub_url,
@@ -456,6 +449,9 @@ def _extract_social_links(soup: BeautifulSoup) -> Dict[str, Optional[str]]:
         href = link['href']
         href_lower = href.lower()
         
+        if not is_valid_social_url(href):
+            continue
+            
         if 'facebook.com' in href_lower and not social_links['facebook']:
             social_links['facebook'] = href
         elif 'instagram.com' in href_lower and not social_links['instagram']:
