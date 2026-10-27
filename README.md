@@ -151,6 +151,8 @@ cd LeadScraper-2.0-Enhanched-
 
 python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
+# Optional: Install Milli-Scrapes for sub-millisecond V8 hyper-reflex engine
+pip install git+https://github.com/Abdullah-Al-Raju/milli-scrapes.git
 ```
 
 **On Windows (PowerShell or Command Prompt):**
@@ -161,6 +163,8 @@ cd LeadScraper-2.0-Enhanched-
 python -m venv venv
 .\venv\Scripts\activate
 pip install -r requirements.txt
+# Optional: Install Milli-Scrapes for sub-millisecond V8 hyper-reflex engine
+pip install git+https://github.com/Abdullah-Al-Raju/milli-scrapes.git
 ```
 
 ---
