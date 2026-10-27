@@ -694,7 +694,7 @@ def run_cli_discovery(location, quantity, category, local_mode=False, output_fil
     run_pipeline()
 
 
-if __name__ == "__main__":
+def cli():
     display.print_banner()
     
     display.info("Engine: Milli Universal V8 Hyper-Reflex High-Speed Extraction ($0.00 Cost)")
@@ -756,3 +756,7 @@ if __name__ == "__main__":
     else:
         # Standard Sheets pipeline mode
         run_pipeline()
+
+
+if __name__ == "__main__":
+    cli()
