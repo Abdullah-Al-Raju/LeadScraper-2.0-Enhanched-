@@ -34,6 +34,4 @@ desktop.ini
 tests/__pycache__/
 .pytest_cache/
 output/*
-!output/luxembourg_700_restaurants.csv
-!output/luxembourg_700_restaurants.json
-!output/10000_RESTAURANTS_LEADS_REPORT.md
+!output/.gitkeep

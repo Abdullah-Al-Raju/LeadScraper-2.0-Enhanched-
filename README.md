@@ -175,14 +175,6 @@ To stream leads directly into a shared Google Sheet:
 
 ---
 
-## Benchmarks & Sample Datasets
-
-- **10,000 Leads Benchmark**: Benchmark report evaluating 10,000 production leads across 50 industries. See [`BENCHMARK_10000_LEADS_REPORT.md`](BENCHMARK_10000_LEADS_REPORT.md).
-- **Global 10,000 Restaurants Dataset**: Extraction across Australia, USA, Luxembourg, UAE, and Japan. See [`output/10000_RESTAURANTS_LEADS_REPORT.md`](output/10000_RESTAURANTS_LEADS_REPORT.md).
-- **Luxembourg Nationwide 700**: 700 dining establishments across Luxembourg. Download: [`output/luxembourg_700_restaurants.csv`](output/luxembourg_700_restaurants.csv).
-
----
-
 ## Project Structure
 
 ```text

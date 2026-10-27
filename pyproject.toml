@@ -44,7 +44,7 @@ lead-scraper-falcon = "main:cli"
 lead-scraper = "main:cli"
 
 [tool.setuptools]
-py-modules = ["main", "config", "cap"]
+py-modules = ["main", "config"]
 
 [tool.setuptools.packages.find]
 where = ["."]
