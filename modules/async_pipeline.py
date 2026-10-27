@@ -37,124 +37,24 @@ async def process_business_async(sheet, row, progress, stats, cache, semaphore):
             # Update status
             update_status(sheet, row_number, config.STATUS_PROCESSING)
             
-            # ===== MULTI-SOURCE DISCOVERY (ASYNC!) =====
-            logger.info("Step 1: Multi-Source Discovery...")
+            # Extract using pure Milli-First architecture
+            from main import _async_scrape_single_business
+            contacts = await _async_scrape_single_business(
+                business_name=dup_check_name,
+                city=city,
+                category=category,
+                website_url=row.get('website'),
+                force_milli=True
+            )
             
-            from modules.search import search_for_website
-            
-            # Search concurrently for different sources
-            website_task = search_for_website(search_term, city)
-            
-            # Run website search
-            website_url = await website_task
-            
-            if not website_url:
-                update_status(sheet, row_number, config.STATUS_NO_WEBSITE)
-                stats['no_website'] += 1
-                progress.update("No website found")
-                return
-            
-            logger.info(f"Found website: {website_url}")
-            
-            # ===== MULTI-SOURCE EXTRACTION (ASYNC & CONCURRENT!) =====
-            logger.info("Step 2: Extracting from all sources concurrently...")
-            
-            # Create concurrent extraction tasks
-            extraction_tasks = []
-            
-            # Task 1: Crawl website
-            from modules.crawler import crawl_website
-            extraction_tasks.append(crawl_website(website_url))
-            
-            # Task 2: Search results extraction (run in executor - it's sync)
-            async def extract_search_results():
-                try:
-                    from modules.sources.search_result_extractor import extract_from_search_results
-                    loop = asyncio.get_event_loop()
-                    return await loop.run_in_executor(
-                        None,
-                        extract_from_search_results,
-                        search_term,
-                        city,
-                        category
-                    )
-                except Exception as e:
-                    logger.warning(f"Search extraction failed: {e}")
-                    return None
-            
-            extraction_tasks.append(extract_search_results())
-            
-            #Task 3: Facebook search (run in executor)
-            async def extract_facebook():
-                try:
-                    from modules.sources.search_result_extractor import extract_from_social_search
-                    loop = asyncio.get_event_loop()
-                    return await loop.run_in_executor(
-                        None,
-                        extract_from_social_search,
-                        search_term,
-                        city,
-                        'facebook'
-                    )
-                except Exception as e:
-                    logger.warning(f"Facebook extraction failed: {e}")
-                    return None
-            
-            extraction_tasks.append(extract_facebook())
-            
-            # Task 4: Instagram search (run in executor)
-            async def extract_instagram():
-                try:
-                    from modules.sources.search_result_extractor import extract_from_social_search
-                    loop = asyncio.get_event_loop()
-                    return await loop.run_in_executor(
-                        None,
-                        extract_from_social_search,
-                        search_term,
-                        city,
-                        'instagram'
-                    )
-                except Exception as e:
-                    logger.warning(f"Instagram extraction failed: {e}")
-                    return None
-            
-            extraction_tasks.append(extract_instagram())
-            
-            # Run all extractions CONCURRENTLY!
-            logger.info(f"Running {len(extraction_tasks)} extractions in parallel...")
-            extraction_results = await asyncio.gather(*extraction_tasks, return_exceptions=True)
-            
-            # Filter out None and exceptions
-            sources_data = [
-                result for result in extraction_results
-                if result and not isinstance(result, Exception)
-            ]
-            
-            logger.info(f"Got data from {len(sources_data)} sources")
-            
-            if not sources_data:
+            if not contacts or contacts.get('confidence_score', 0) == 0 and not contacts.get('website'):
                 update_status(sheet, row_number, config.STATUS_EXTRACTION_FAILED)
                 stats['extraction_failed'] += 1
-                progress.update("Extraction failed")
+                progress.update("Failed")
                 return
             
-            # ===== DATA FUSION =====
-            logger.info("Step 3: Fusing data from all sources...")
-            
-            from modules.fusion import merge_multi_source_data
-            contacts = merge_multi_source_data(sources_data)
-            
-            # Add metadata
-            contacts['business_name'] = business_name or search_term
-            contacts['city'] = city
-            contacts['category'] = category
-            contacts['website'] = website_url
-            
-            # Calculate completeness
-            confidence = calculate_completeness(contacts)
-            contacts['completeness_score'] = confidence
-            
-            logger.info(f"Data fusion complete - Confidence: {confidence}%")
+            confidence = contacts.get('confidence_score', 0)
+            logger.info(f"Milli extraction complete - Confidence: {confidence}%")
             
             # ===== WRITE TO OUTPUT =====
             write_to_output(sheet, contacts)

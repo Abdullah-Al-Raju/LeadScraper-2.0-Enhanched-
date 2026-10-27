@@ -247,126 +247,22 @@ def process_business(sheet, row, progress, stats, cache=None):
         # Update status to processing
         update_status(sheet, row_number, config.STATUS_PROCESSING)
         
-        # ===== MULTI-SOURCE DISCOVERY =====
-        logger.info("Step 1: Multi-Source Discovery...")
+        # Extract using pure Milli-First architecture
+        contacts = asyncio.run(_async_scrape_single_business(
+            business_name=dup_check_name,
+            city=city,
+            category=category,
+            website_url=row.get('website'),
+            force_milli=True
+        ))
         
-        from modules.search import search_multi_source
-        source_urls = search_multi_source(search_term, city, category)
-        
-        # Check if we found anything
-        found_sources = [k for k, v in source_urls.items() if v]
-        if not found_sources:
-            update_status(sheet, row_number, config.STATUS_NO_WEBSITE)
-            stats['no_website'] += 1
-            progress.update("No sources found")
-            return
-        
-        logger.info(f"Found {len(found_sources)} sources: {', '.join(found_sources)}")
-        
-        # ===== MULTI-SOURCE EXTRACTION =====
-        logger.info("Step 2: Extracting from all sources...")
-        
-        sources_data = []
-        
-        # Extract from general search results (phones in snippets)
-        try:
-            from modules.sources.search_result_extractor import extract_from_search_results
-            search_data = extract_from_search_results(search_term, city, category)
-            if search_data:
-                sources_data.append(search_data)
-                logger.info(f"Search results extraction successful")
-        except Exception as e:
-            logger.warning(f"Search results extraction failed: {e}")
-        
-        # Extract from Facebook search (snippet + URL)
-        if source_urls.get('facebook'):
-            try:
-                from modules.sources.search_result_extractor import extract_from_social_search
-                fb_data = extract_from_social_search(search_term, city, 'facebook')
-                if fb_data:
-                    sources_data.append(fb_data)
-                    logger.info(f"Facebook search extraction successful")
-            except Exception as e:
-                logger.warning(f"Facebook search extraction failed: {e}")
-        
-        # Extract from Instagram search (snippet + URL)
-        if source_urls.get('instagram'):
-            try:
-                from modules.sources.search_result_extractor import extract_from_social_search
-                ig_data = extract_from_social_search(search_term, city, 'instagram')
-                if ig_data:
-                    sources_data.append(ig_data)
-                    logger.info(f"Instagram search extraction successful")
-            except Exception as e:
-                logger.warning(f"Instagram search extraction failed: {e}")
-        
-        # Extract from website if found
-        if source_urls.get('website'):
-            try:
-                # Check if it's a directory site
-                from modules.sources.directory_extractor import is_extractable_directory, extract_from_directory
-                
-                is_dir, dir_type = is_extractable_directory(source_urls['website'])
-                
-                if is_dir:
-                    # Extract FROM the directory
-                    logger.info(f"Found {dir_type} directory - extracting...")
-                    dir_data = extract_from_directory(source_urls['website'], dir_type)
-                    if dir_data:
-                        sources_data.append(dir_data)
-                        logger.info(f"Directory extraction successful")
-                else:
-                    # Normal website crawling
-                    logger.info("Crawling traditional website...")
-                    crawl_data = crawl_website(source_urls['website'])
-                    
-                    if crawl_data:
-                        # Extract with category-aware AI
-                        website_contacts = extract_contacts(crawl_data, category=category)
-                        if website_contacts:
-                            website_contacts['source_type'] = 'website'
-                            website_contacts['website'] = source_urls['website']
-                            sources_data.append(website_contacts)
-                            logger.info(f"Website extraction successful")
-                    else:
-                        logger.warning("Website crawl failed")
-                        
-            except Exception as e:
-                logger.error(f"Website processing error: {e}")
-        
-        # Check if we got any data
-        if not sources_data:
+        confidence = contacts.get('confidence_score', 0) if contacts else 0
+        if not contacts or (confidence == 0 and not contacts.get('website')):
             update_status(sheet, row_number, config.STATUS_EXTRACTION_FAILED)
             stats['extraction_failed'] += 1
             progress.update("Extraction failed")
             return
-        
-        # ===== DATA FUSION =====
-        logger.info(f"Step 3: Fusing data from {len(sources_data)} sources...")
-
-        
-        from modules.fusion import merge_multi_source_data
-        contacts = merge_multi_source_data(sources_data)
-        
-        if not contacts:
-            update_status(sheet, row_number, config.STATUS_EXTRACTION_FAILED)
-            stats['extraction_failed'] += 1
-            progress.update("Fusion failed")
-            return
-        
-        # Set business name if not extracted (AI should extract the real name from website)
-        if not contacts.get('business_name'):
-            # Use search_term as fallback, but AI should have found the real name
-            contacts['business_name'] = search_term
-        
-        # Set website if not already set
-        if not contacts.get('website') and source_urls.get('website'):
-            contacts['website'] = source_urls['website']
-        
-        # Calculate completeness (for backward compatibility)
-        completeness = calculate_completeness(contacts)
-        confidence = contacts.get('confidence_score', 0)
-        
+            
         logger.info(f"Results:")
         logger.info(f"  - Business: {contacts.get('business_name', 'Unknown')}")
         logger.info(f"  - Phones: {len(contacts.get('phone_numbers', []))}")
@@ -374,7 +270,6 @@ def process_business(sheet, row, progress, stats, cache=None):
         logger.info(f"  - Address: {'Yes' if contacts.get('street_address') else 'No'}")
         logger.info(f"  - Confidence: {confidence}%")
         logger.info(f"  - Sources: {', '.join(contacts.get('sources_used', []))}")
-        logger.info(f"  - Verified: {', '.join(contacts.get('verified_fields', []))}")
         
         # Step 4: Write to output
         write_to_output(sheet, contacts)
