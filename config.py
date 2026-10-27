@@ -19,6 +19,25 @@ OUTPUT_TAB_NAME = "Results"
 SERVICE_ACCOUNT_FILE = os.getenv("SERVICE_ACCOUNT_FILE", "credentials/service_account.json")
 
 # ============================================================
+# OPENROUTER AI CONFIGURATION (OPTIONAL FREE AUTO-ROUTER)
+# ============================================================
+
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "").strip()
+OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
+# OpenRouter's built-in dynamic router for zero-cost models
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openrouter/free")
+# Ordered fallback list across free models for automated rate-limit failover
+OPENROUTER_FALLBACK_MODELS = [
+    "openrouter/free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "google/gemini-2.0-flash-exp:free",
+    "qwen/qwen-2.5-72b-instruct:free",
+    "mistralai/mistral-7b-instruct:free"
+]
+ENABLE_AI_FALLBACK = os.getenv("ENABLE_AI_FALLBACK", "true").lower() in ("true", "1", "yes")
+AI_REQUEST_TIMEOUT = int(os.getenv("AI_REQUEST_TIMEOUT", "15"))
+
+# ============================================================
 # SCRAPING BEHAVIOR
 # ============================================================
 

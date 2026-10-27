@@ -23,6 +23,7 @@ class RateLimiter:
             'facebook': (10, 60),        # 10 calls per 60 seconds
             'instagram': (10, 60),       # 10 calls per 60 seconds
             'google': (20, 60),          # 20 calls per 60 seconds
+            'openrouter': (30, 60),      # 30 calls per 60 seconds (free tier protection)
             'website': (1800, 60),       # High-throughput multi-domain crawling (30/s)
             'default': (15, 60)          # Default for unknown services
         }

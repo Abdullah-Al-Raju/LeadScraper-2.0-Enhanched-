@@ -154,6 +154,7 @@ d:\Scrapper\
 ├── config.py                        # All configuration
 ├── .env                            # API keys
 ├── modules/
+│   ├── ai_manager.py               # OpenRouter Free Auto-Router & fallbacks
 │   ├── display.py                  # Terminal UI (rich)
 │   ├── utils.py                    # Utilities, logging
 │   ├── sheets.py                   # Google Sheets operations
@@ -199,6 +200,8 @@ Deterministic Regex Suite (RFC 5322 emails + international phones + social endpo
     ↓
 JSON-LD Structured Schema Parser
     ↓
+Optional OpenRouter Free Auto-Router (if sparse)
+    ↓
 Fused Lead Record ($0.00 Compute Cost)
 ```
 
@@ -213,8 +216,12 @@ Fused Lead Record ($0.00 Compute Cost)
 pip install -r requirements.txt
 ```
 
-2. **Configure Environment** (`.env` - Optional for Google Sheets):
+2. **Configure Environment** (`.env` - Optional):
 ```env
+# Optional: OpenRouter key for free AI auto-router
+OPENROUTER_API_KEY=your_openrouter_api_key
+
+# Optional: Google Sheets integration
 GOOGLE_SHEET_ID=your_sheet_id
 SERVICE_ACCOUNT_FILE=credentials/service_account.json
 ```

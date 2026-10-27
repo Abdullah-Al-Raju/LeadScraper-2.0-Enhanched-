@@ -32,6 +32,23 @@ def discover_restaurants(location, quantity=100, category='restaurant'):
     # Phase 2: Execute searches
     all_names = []
     
+    # Optional: OpenRouter free router candidate suggestions
+    try:
+        from modules.ai_manager import ai_manager
+        if ai_manager.is_available():
+            logger.info("OpenRouter AI enabled: Querying free auto-router for candidate businesses...")
+            ai_suggestions = ai_manager.discover_businesses_with_ai_sync(
+                location, category, quantity=min(quantity, 25)
+            )
+            for item in ai_suggestions:
+                name = item.get('business_name')
+                if name and name not in all_names:
+                    all_names.append(name)
+            if ai_suggestions:
+                logger.info(f"OpenRouter free models contributed {len(ai_suggestions)} candidates")
+    except Exception as e:
+        logger.debug(f"Optional AI discovery error: {e}")
+    
     for i, query in enumerate(queries, 1):
         logger.info(f"Search Query {i}/{len(queries)}: {query}")
         

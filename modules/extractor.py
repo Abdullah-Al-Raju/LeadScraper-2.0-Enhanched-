@@ -54,6 +54,21 @@ def extract_contacts(crawl_data, category=None):
         )
         contacts = _merge_contacts(contacts, regex_contacts)
     
+    # Try Tier 3 (Optional): OpenRouter Free Auto-Router
+    if not _is_sufficient(contacts) and getattr(config, 'ENABLE_AI_FALLBACK', True):
+        try:
+            from modules.ai_manager import ai_manager
+            if ai_manager.is_available():
+                logger.info("Contacts sparse after deterministic parsing. Querying OpenRouter free router...")
+                ai_contacts = ai_manager.extract_contacts_with_ai_sync(
+                    crawl_data.get('combined_text', ''),
+                    category=category
+                )
+                if ai_contacts:
+                    contacts = _merge_contacts(contacts, ai_contacts)
+        except Exception as e:
+            logger.debug(f"Optional AI extraction tier error: {e}")
+    
     # Add social links
     social = crawl_data.get('social_links', {})
     for platform in ['facebook', 'instagram', 'twitter', 'linkedin', 'youtube', 'tiktok', 'whatsapp']:
@@ -299,7 +314,26 @@ def _is_sufficient(contacts):
 
 
 # ============================================================
-# CATEGORY-AWARE AI EXTRACTION
+# CATEGORY-AWARE AI EXTRACTION (OPTIONAL)
 # ============================================================
+
+def extract_with_ai(text: str, category: str = "") -> dict:
+    """
+    Extract contacts using OpenRouter AI free auto-router if configured,
+    or return empty contacts dict if API key is not present.
+    """
+    try:
+        from modules.ai_manager import ai_manager
+        if ai_manager.is_available():
+            return ai_manager.extract_contacts_with_ai_sync(text, category=category)
+    except Exception as e:
+        logger.debug(f"AI extraction helper failed: {e}")
+    return _empty_contacts()
+
+
+def extract_with_ai_category_aware(text: str, category: str = "") -> dict:
+    """Category-aware wrapper for AI extraction."""
+    return extract_with_ai(text, category=category)
+
 
 

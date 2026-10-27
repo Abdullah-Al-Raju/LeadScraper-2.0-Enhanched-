@@ -58,9 +58,9 @@ Whether given a search term (e.g., *"specialty coffee shops in Austin, TX"*), a 
 - Under EU regulations (e.g., the eCommerce Directive and DSGVO/GDPR), businesses are legally required to publish contact emails on their **Impressum** or **Mentions Légales** page.
 - When an email is absent from the homepage, the engine automatically identifies and deep-crawls internal subpages (`/contact`, `/kontakt`, `/impressum`, `/mentions-legales`, `/about`, `/reservation`), yielding a **+60% increase in verified business emails**.
 
-### 4. ⚡ Zero-Cost Deterministic Contact Extraction
-- Operates entirely without third-party LLM APIs, rate-limited tokens, or paid model subscriptions.
-- Eliminates hallucination risks by relying strictly on verifiable HTML, Schema.org JSON-LD microdata, Cloudflare XOR decoding, and precompiled regex patterns.
+### 4. ⚡ Zero-Cost Deterministic Extraction + Optional Free AI Tier
+- **Deterministic by Default**: Operates locally with zero third-party API dependencies, rate limits, or costs, relying strictly on verifiable HTML, Schema.org JSON-LD microdata, Cloudflare XOR decoding, and precompiled regex patterns.
+- **Optional OpenRouter Free Auto-Router**: If configured with `OPENROUTER_API_KEY`, LeadScraper can optionally query OpenRouter's free auto-router (`openrouter/free`) with server-side fallbacks across free models (`meta-llama/llama-3.3-70b-instruct:free`, `google/gemini-2.0-flash-exp:free`, `qwen/qwen-2.5-72b-instruct:free`) for challenging unstructured layouts.
 
 ### 5. 🔬 Multi-Source Data Fusion & Confidence Scoring
 - Fuses up to 5 concurrent sources per lead: **Official Website + Search Engine Snippets + Facebook + Instagram + Schema.org JSON-LD**.
@@ -201,6 +201,19 @@ For real-time streaming directly into your team's Google Sheet:
    ```bash
    python3 main.py --discover "SoHo, New York" --quantity 25 --category "boutique"
    ```
+
+#### 🟣 Option C: Optional OpenRouter Free AI Auto-Router Tier
+For users who do not use automated AI coding agents and want optional AI-assisted extraction and discovery:
+LeadScraper includes an optional integration with OpenRouter's free tier:
+- **Free Auto-Router (`openrouter/free`)**: Dynamically routes prompts to currently available zero-cost models.
+- **Server-Side Fallback Array**: Automatically fails over across free models (`meta-llama/llama-3.3-70b-instruct:free`, `google/gemini-2.0-flash-exp:free`, `qwen/qwen-2.5-72b-instruct:free`, `mistralai/mistral-7b-instruct:free`) on rate limits or outages without manual intervention.
+- **How to use**:
+  1. Obtain a free API key at [openrouter.ai/keys](https://openrouter.ai/keys).
+  2. Add it to `.env`:
+     ```env
+     OPENROUTER_API_KEY=sk-or-v1-your-key-here
+     ```
+  3. Run any scrape command normally. LeadScraper uses fast deterministic parsing first and queries free models only if contacts are sparse. You can also force AI mode with `--ai` or disable it with `--no-ai`.
 
 ---
 

@@ -553,6 +553,18 @@ def parse_args():
         action='store_true',
         help='Disable Milli Universal Scraper and use fallback HTTPX'
     )
+
+    parser.add_argument(
+        '--ai',
+        action='store_true',
+        help='Force enable OpenRouter AI free auto-router tier'
+    )
+
+    parser.add_argument(
+        '--no-ai',
+        action='store_true',
+        help='Disable OpenRouter AI tier even if OPENROUTER_API_KEY is configured'
+    )
     
     return parser.parse_args()
 
@@ -689,6 +701,17 @@ if __name__ == "__main__":
     
     args = parse_args()
     force_milli = not args.no_milli
+
+    from modules.ai_manager import ai_manager
+    if args.no_ai:
+        config.ENABLE_AI_FALLBACK = False
+    elif args.ai:
+        config.ENABLE_AI_FALLBACK = True
+
+    if ai_manager.is_available() and getattr(config, 'ENABLE_AI_FALLBACK', True):
+        display.info(f"AI Tier: OpenRouter Free Auto-Router (Model: {config.OPENROUTER_MODEL} with server-side fallbacks)")
+    else:
+        display.info("AI Tier: Standalone Deterministic Mode ($0 Cost). Optional: Add OPENROUTER_API_KEY to .env for free AI auto-rotation.")
     
     # Direct URL mode
     if args.url:

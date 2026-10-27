@@ -57,6 +57,8 @@ python main.py --url "https://example.com" --no-milli --local --output output/le
 | `--local` | Flag | `False` | Run in 100% standalone mode ($0 cost, no Sheets required) | `--local` |
 | `--output` | String | `None` | Destination filepath (`.csv` or `.json`) | `--output output/leads.csv` |
 | `--no-milli` | Flag | `False` | Disable Milli V8 engine and use fallback HTTPX | `--no-milli` |
+| `--ai` | Flag | `False` | Force enable OpenRouter AI free auto-router tier | `--ai` |
+| `--no-ai` | Flag | `False` | Disable AI tier even if OPENROUTER_API_KEY is configured | `--no-ai` |
 
 ---
 
@@ -114,8 +116,11 @@ print(f"Confidence Score: {fused_record['confidence_score']}%")
 
 For **100% Local Mode (`--local`)**, no API keys or environment variables are required!
 
-For **Google Sheets Cloud Pipeline Mode**, configure `.env`:
+For **Optional Integrations**, configure `.env`:
 ```env
+# Optional: OpenRouter Free Auto-Router (Zero-cost AI extraction & discovery)
+OPENROUTER_API_KEY=sk-or-v1-your-key-here
+
 # Optional: Google Cloud Service Account for Sheets integration
 GOOGLE_SHEET_ID=your-google-sheet-id-from-url
 SERVICE_ACCOUNT_FILE=credentials/service_account.json
