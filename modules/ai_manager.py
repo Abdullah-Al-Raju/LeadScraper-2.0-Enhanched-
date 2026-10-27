@@ -1,5 +1,5 @@
 """
-OpenRouter AI Manager for LeadScraper 2.0 Enhanced
+OpenRouter AI Manager for LeadScraper Falcon
 Provides zero-cost AI extraction and discovery utilizing OpenRouter's free auto-router (`openrouter/free`)
 and server-side multi-model fallbacks.
 """
@@ -44,8 +44,8 @@ class OpenRouterAIManager:
     def _get_headers(self) -> Dict[str, str]:
         return {
             "Authorization": f"Bearer {self.api_key}",
-            "HTTP-Referer": "https://github.com/Abdullah-Al-Raju/LeadScraper-2.0-Enhanched-",
-            "X-Title": "LeadScraper 2.0 Enhanced",
+            "HTTP-Referer": "https://github.com/Abdullah-Al-Raju/lead-scraper-falcon",
+            "X-Title": "LeadScraper Falcon",
             "Content-Type": "application/json",
         }
 

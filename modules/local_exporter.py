@@ -1,7 +1,7 @@
 """
 Local Exporter Module
 Exports scraped lead results to CSV, JSON, and terminal displays.
-Enables running LeadScraper standalone without Google Cloud dependencies.
+Enables running LeadScraper Falcon standalone without Google Cloud dependencies.
 """
 
 import os

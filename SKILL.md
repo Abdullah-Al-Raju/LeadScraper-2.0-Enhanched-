@@ -1,9 +1,9 @@
 ---
-name: leadscraper-enhanced
+name: lead-scraper-falcon
 description: Autonomous business intelligence, lead generation, and contact extraction engine. Discovers operating businesses, filters out 40+ directory aggregators, deobfuscates Cloudflare protected emails, deep-crawls European Impressum subpages, harvests social media endpoints (Instagram, Facebook, X, LinkedIn, TikTok), and fuses multi-source data with Bayesian confidence scoring at $0.00 compute cost.
 ---
 
-# LeadScraper 2.0 Enhanced Agent Skill
+# LeadScraper Falcon Agent Skill
 
 Use this skill whenever an autonomous agent, multi-agent workflow, or user needs to:
 1. **Find and verify businesses** in any city, country, or industry niche (e.g. coffee shops in Austin, dental clinics in London, fine dining in Tokyo).

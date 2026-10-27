@@ -1,5 +1,5 @@
 """
-LeadScraper - Main Pipeline Orchestrator
+LeadScraper Falcon - Main Pipeline Orchestrator
 Automated local business contact finder
 """
 
@@ -41,7 +41,7 @@ def run_pipeline():
     # Start stopwatch
     start_time = time.time()
     
-    display.section_header("LeadScraper Pipeline Starting")
+    display.section_header("LeadScraper Falcon Pipeline Starting")
     
     # Validate configuration
     if not _validate_config():
@@ -202,7 +202,7 @@ def run_pipeline():
         seconds = int(total_time % 60)
         
         logger.info("="*60)
-        logger.info("LeadScraper Pipeline Completed")
+        logger.info("LeadScraper Falcon Pipeline Completed")
         logger.info("="*60)
         display.success(f"Total execution time: {minutes}m {seconds}s")
         logger.info(f"Total execution time: {minutes} minutes, {seconds} seconds")
@@ -494,7 +494,7 @@ def _is_discovery_mode(rows):
 def parse_args():
     """Parse command-line arguments"""
     parser = argparse.ArgumentParser(
-        description='LeadScraper AI Agent - Intelligent Business Discovery & Extraction (Milli-Enhanced)'
+        description='LeadScraper Falcon - Intelligent Business Discovery & Extraction (Milli-Enhanced)'
     )
     
     parser.add_argument(

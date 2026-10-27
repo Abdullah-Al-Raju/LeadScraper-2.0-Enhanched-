@@ -1,5 +1,5 @@
 <p align="center">
-  <h1 align="center">🔍 LeadScraper 2.0 Enhanced</h1>
+  <h1 align="center">🦅 LeadScraper Falcon</h1>
   <p align="center">
     <strong>Autonomous High-Speed Lead Generation & Multi-Source Intelligence Engine</strong><br>
     High-throughput business discovery, anti-bot crawling, Cloudflare deobfuscation, and multi-source contact fusion.
@@ -28,9 +28,9 @@
 
 ---
 
-## 📖 What Is LeadScraper 2.0 Enhanced?
+## 📖 What Is LeadScraper Falcon?
 
-**LeadScraper 2.0 Enhanced** is a production-grade, autonomous business intelligence and lead generation pipeline. It replaces manual research, slow single-threaded scrapers, and expensive data brokers with an **integrated high-speed parallel crawling and deterministic intelligence architecture**.
+**LeadScraper Falcon** is a production-grade, autonomous business intelligence and lead generation pipeline. It replaces manual research, slow single-threaded scrapers, and expensive data brokers with an **integrated high-speed parallel crawling and deterministic intelligence architecture**.
 
 Whether given a search term (e.g., *"specialty coffee shops in Austin, TX"*), a list of business names, or a direct website, LeadScraper:
 1. 🌐 **Discovers & Verifies** real operating businesses using multi-engine heuristic search and regional topology.
@@ -74,7 +74,7 @@ Whether given a search term (e.g., *"specialty coffee shops in Austin, TX"*), a 
 
 ## 🔄 Evolution Matrix
 
-| Capability | 📋 Manual Research | 🔧 LeadScraper v1.0 | ⚡ LeadScraper 2.0 Enhanced |
+| Capability | 📋 Manual Research | 🔧 LeadScraper v1.0 | 🦅 LeadScraper Falcon |
 |---|---|---|---|
 | **Crawling Engine** | Manual browser | Single `requests` | **Milli Universal Engine (V8 Hyper-Reflex + SIMD HTTP)** |
 | **Throughput** | 1 lead per 15 min | 1 lead per 2–3 min | **561 leads/second (10,000 in 17.82s)** |
@@ -92,12 +92,12 @@ Whether given a search term (e.g., *"specialty coffee shops in Austin, TX"*), a 
 
 ## 🏎️ 10,000 Leads Mega-Scale Benchmark Showdown
 
-> **Benchmark Date**: October 2026 | **Scale**: 10,000 Production Enterprise Leads | **Winner**: 🏆 **LeadScraper + Milli (336.7x Faster than Firecrawl)**  
+> **Benchmark Date**: October 2026 | **Scale**: 10,000 Production Enterprise Leads | **Winner**: 🏆 **LeadScraper Falcon + Milli (336.7x Faster than Firecrawl)**  
 > **Full Technical Audit**: [`BENCHMARK_10000_LEADS_REPORT.md`](BENCHMARK_10000_LEADS_REPORT.md)
 
-### Calculative Comparison: LeadScraper (Milli Engine) vs. Firecrawl
+### Calculative Comparison: LeadScraper Falcon (Milli Engine) vs. Firecrawl
 
-| Metric | Firecrawl (Standard Plan / Self-Hosted) | LeadScraper 2.0 Enhanced (Milli Engine) | Advantage / Factor |
+| Metric | Firecrawl (Standard Plan / Self-Hosted) | LeadScraper Falcon (Milli Engine) | Advantage / Factor |
 | :--- | :--- | :--- | :--- |
 | **Wall-Clock Time (10,000 Leads)** | **100.0 minutes** (1.67 hours) | **0.30 minutes** (17.82 seconds) | 🏆 **336.7x Faster** |
 | **Throughput (Leads / Second)** | 1.67 leads / sec (100 req/min limit) | **561.2 leads / sec** | 🏆 **336.1x Throughput** |
@@ -146,8 +146,8 @@ To verify real-world speed and reliability without triggering rate-limit conflic
 
 **On Linux / macOS:**
 ```bash
-git clone https://github.com/Abdullah-Al-Raju/LeadScraper-2.0-Enhanched-.git
-cd LeadScraper-2.0-Enhanched-
+git clone https://github.com/Abdullah-Al-Raju/lead-scraper-falcon.git
+cd lead-scraper-falcon
 
 python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
@@ -157,8 +157,8 @@ pip install git+https://github.com/Abdullah-Al-Raju/milli-scrapes.git
 
 **On Windows (PowerShell or Command Prompt):**
 ```powershell
-git clone https://github.com/Abdullah-Al-Raju/LeadScraper-2.0-Enhanched-.git
-cd LeadScraper-2.0-Enhanched-
+git clone https://github.com/Abdullah-Al-Raju/lead-scraper-falcon.git
+cd lead-scraper-falcon
 
 python -m venv venv
 .\venv\Scripts\activate
@@ -225,7 +225,7 @@ LeadScraper includes an optional integration with OpenRouter's free tier:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                      LeadScraper 2.0 Enhanced Pipeline                 │
+│                         LeadScraper Falcon Pipeline                    │
 ├────────────────────────────────────────────────────────────────────────┤
 │                                                                        │
 │  [1] MULTI-MODAL DISCOVERY                                             │
@@ -258,7 +258,7 @@ LeadScraper includes an optional integration with OpenRouter's free tier:
 
 ## 🏆 Featured Dataset: Luxembourg Nationwide 700
 
-To benchmark LeadScraper 2.0 Enhanced against complex real-world data, we extracted and verified **700 dining establishments across all cantons and communes in the country of Luxembourg**.
+To benchmark LeadScraper Falcon against complex real-world data, we extracted and verified **700 dining establishments across all cantons and communes in the country of Luxembourg**.
 
 Using the deep contact and Impressum crawler with 60 parallel workers, the entire extraction and enrichment completed in **64.96 seconds**:
 
@@ -309,7 +309,7 @@ python3 scripts/scrape_luxembourg_restaurants.py
 ## 📁 Repository Structure
 
 ```
-LeadScraper-2.0-Enhanced/
+lead-scraper-falcon/
 ├── .env.example                            ← Configuration template
 ├── .gitignore                              ← Protects secrets & caches
 ├── main.py                                 ← CLI entry point & orchestrator
@@ -354,7 +354,7 @@ LeadScraper-2.0-Enhanced/
 
 ## 🧪 Running Unit & Integration Tests
 
-LeadScraper 2.0 Enhanced includes a full test suite covering extraction, Cloudflare decoding, rate limiting, and multi-source fusion:
+LeadScraper Falcon includes a full test suite covering extraction, Cloudflare decoding, rate limiting, and multi-source fusion:
 
 ```bash
 pytest tests/ -v
@@ -364,7 +364,7 @@ pytest tests/ -v
 
 ## 🤔 FAQ
 
-**Q: Is LeadScraper 2.0 Enhanced completely free to run?**
+**Q: Is LeadScraper Falcon completely free to run?**
 > **Yes.** You can run the entire pipeline in `--local` mode with $0.00 compute cost and zero third-party API dependencies. If syncing with Google Sheets, LeadScraper uses Google Cloud's free tier.
 
 **Q: How does it find emails that are hidden from regular scrapers?**

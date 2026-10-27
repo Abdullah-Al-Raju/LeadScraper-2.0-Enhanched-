@@ -1,4 +1,4 @@
-# Async Configuration for LeadScraper Pro
+# Async Configuration for LeadScraper Falcon
 # ============================================
 
 # Concurrency settings (LAPTOP OPTIMIZED)

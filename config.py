@@ -1,5 +1,5 @@
 """
-LeadScraper Configuration
+LeadScraper Falcon Configuration
 All configuration constants and settings
 """
 

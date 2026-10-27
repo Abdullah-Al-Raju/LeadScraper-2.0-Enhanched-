@@ -1,5 +1,5 @@
 """
-LeadScraper Progress Cache
+LeadScraper Falcon Progress Cache
 Enables resume capability - save progress and resume after crash
 """
 

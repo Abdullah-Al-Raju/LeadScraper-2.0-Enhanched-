@@ -23,7 +23,7 @@ def print_banner():
     banner = """
 +===================================================+
 |                                                   |
-|           LeadScraper AI Agent v2.0              |
+|               LeadScraper Falcon                  |
 |       Intelligent Business Discovery              |
 |                                                   |
 +===================================================+

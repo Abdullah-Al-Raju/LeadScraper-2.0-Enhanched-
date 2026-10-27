@@ -1,5 +1,5 @@
 """
-Rate Limiter for LeadScraper
+Rate Limiter for LeadScraper Falcon
 Prevents API bans by limiting request rate per service
 """
 

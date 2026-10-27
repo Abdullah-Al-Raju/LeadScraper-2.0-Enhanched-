@@ -1,5 +1,5 @@
 """
-Utility functions for LeadScraper
+Utility functions for LeadScraper Falcon
 Rate limiting, retry logic, logging, text cleaning, robots.txt checking
 """
 

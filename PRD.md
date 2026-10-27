@@ -1,8 +1,8 @@
-# LeadScraper AI Agent - Product Requirements Document
+# LeadScraper Falcon - Product Requirements Document
 
 ## Overview
 
-LeadScraper is an intelligent AI-powered business discovery and contact extraction system. It automatically finds businesses in any location, researches them across multiple sources, and extracts complete contact information with high accuracy.
+LeadScraper Falcon is an intelligent business discovery and contact extraction system. It automatically finds businesses in any location, researches them across multiple sources, and extracts complete contact information with high accuracy.
 
 **Key Capabilities**:
 - AI-driven business discovery (no manual input needed)
@@ -92,7 +92,7 @@ python main.py --discover "Dhaka, Bangladesh" --quantity 100
 ```
 ╔═══════════════════════════════════════════════════╗
 ║                                                   ║
-║           LeadScraper AI Agent v2.0              ║
+║               LeadScraper Falcon                  ║
 ║       Intelligent Business Discovery              ║
 ║                                                   ║
 ╚═══════════════════════════════════════════════════╝
