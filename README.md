@@ -30,17 +30,6 @@
 
 ---
 
-## 📌 About LeadScraper Falcon
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Topic-Lead%20Generation-2563eb?style=for-the-badge&logo=target" alt="Lead Generation">
-  <img src="https://img.shields.io/badge/Topic-Web%20Scraping-059669?style=for-the-badge&logo=googlechrome" alt="Web Scraping">
-  <img src="https://img.shields.io/badge/Topic-Anti--Bot%20Bypass-d97706?style=for-the-badge&logo=cloudflare" alt="Anti-Bot Bypass">
-  <img src="https://img.shields.io/badge/Topic-Email%20Extractor-dc2626?style=for-the-badge&logo=gmail" alt="Email Extractor">
-  <img src="https://img.shields.io/badge/Topic-OSINT%20%26%20B2B-7c3aed?style=for-the-badge&logo=databricks" alt="OSINT">
-  <img src="https://img.shields.io/badge/Topic-Zero--Cost%20Deterministic-0891b2?style=for-the-badge&logo=python" alt="Zero-Cost">
-</p>
-
 
 ### 🎯 Overview
 **LeadScraper Falcon** is an open-source, production-grade autonomous business intelligence and high-speed B2B lead generation engine. Engineered at the intersection of high-concurrency network engineering, deterministic data fusion, and in-memory browser automation, Falcon eliminates the need for expensive data brokers (ZoomInfo, Apollo, Apollo API credits), fragile single-threaded scrapers, and manual sales research.
