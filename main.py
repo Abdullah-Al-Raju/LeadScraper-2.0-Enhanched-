@@ -7,6 +7,14 @@ import sys
 import argparse
 import time
 import asyncio
+
+# Windows asyncio event loop initialization
+if sys.platform == "win32":
+    try:
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+    except Exception:
+        pass
+
 import config
 from modules.utils import logger, calculate_completeness, ProgressTracker
 from modules.sheets import (
