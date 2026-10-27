@@ -126,6 +126,12 @@ async def _crawl_with_milli(url: str, max_contact_pages: int = 2) -> Optional[Di
             mailto_links.extend(milli_contacts["emails"])
         if milli_contacts.get("phones"):
             tel_links.extend(milli_contacts["phones"])
+        if milli_contacts.get("social_media"):
+            m_soc = milli_contacts["social_media"]
+            for k in ("facebook", "instagram", "twitter_x", "linkedin", "youtube", "tiktok"):
+                target_k = "twitter" if k == "twitter_x" else k
+                if m_soc.get(k) and not social_links.get(target_k):
+                    social_links[target_k] = m_soc[k]
             
         structured_data = _extract_structured_data(soup) if soup else []
         if res.get("tables"):
@@ -172,6 +178,12 @@ async def _crawl_with_milli(url: str, max_contact_pages: int = 2) -> Optional[Di
                         sub_tels.extend(sub_res["contacts"]["phones"])
                         
                     sub_social = _extract_social_links(sub_soup) if sub_soup else {}
+                    if sub_res.get("contacts", {}).get("social_media"):
+                        sub_soc = sub_res["contacts"]["social_media"]
+                        for k in ("facebook", "instagram", "twitter_x", "linkedin", "youtube", "tiktok"):
+                            target_k = "twitter" if k == "twitter_x" else k
+                            if sub_soc.get(k) and not sub_social.get(target_k):
+                                sub_social[target_k] = sub_soc[k]
                     
                     return {
                         "url": sub_url,

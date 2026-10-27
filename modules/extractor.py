@@ -41,6 +41,10 @@ def extract_contacts(crawl_data, category=None):
             formatted_p = format_phone(ph)
             if formatted_p and formatted_p not in contacts.get('phone_numbers', []):
                 contacts.setdefault('phone_numbers', []).append(formatted_p)
+        for k, v in milli_contacts.get('social_media', {}).items():
+            target_k = 'twitter' if k == 'twitter_x' else k
+            if v and not contacts.get(target_k):
+                contacts[target_k] = v
     
     # Try Tier 2: AI extraction (category-aware)
     if not _is_sufficient(contacts):

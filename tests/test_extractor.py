@@ -91,3 +91,29 @@ def test_extract_contacts_with_milli_data():
     assert any("111-2222" in p for p in extracted.get("phone_numbers", []))
     assert "contact@acme.org" in extracted.get("email_addresses", [])
     assert extracted.get("linkedin") == "https://linkedin.com/company/acme"
+
+
+def test_extract_contacts_with_milli_social_media():
+    crawl_data = {
+        "homepage_url": "https://tokyodining.jp",
+        "homepage_html": "<html><body><h1>Tokyo Dining</h1></body></html>",
+        "combined_text": "Tokyo Dining authentic sushi in Ginza.",
+        "structured_data": [],
+        "milli_contacts": {
+            "emails": ["reservations@tokyodining.jp"],
+            "phones": ["+81-3-1234-5678"],
+            "social_media": {
+                "instagram": "https://instagram.com/tokyodining_ginza",
+                "facebook": "https://facebook.com/tokyodiningjp",
+                "twitter_x": "https://x.com/tokyodining",
+                "tiktok": "https://tiktok.com/@tokyodining"
+            }
+        }
+    }
+    extracted = extract_contacts(crawl_data)
+    assert "reservations@tokyodining.jp" in extracted.get("email_addresses", [])
+    assert extracted.get("instagram") == "https://instagram.com/tokyodining_ginza"
+    assert extracted.get("facebook") == "https://facebook.com/tokyodiningjp"
+    assert extracted.get("twitter") == "https://x.com/tokyodining"
+    assert extracted.get("tiktok") == "https://tiktok.com/@tokyodining"
+
