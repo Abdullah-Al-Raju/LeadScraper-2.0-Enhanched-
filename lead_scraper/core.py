@@ -21,6 +21,7 @@ from lead_scraper.config import (
     HTTP_429_MAX_RETRIES,
     DEFAULT_SUBPAGE_TIMEOUT,
 )
+from lead_scraper.lead_verifier import MilliLeadVerifier
 
 
 def deobfuscate_cfemail(cfemail: str) -> str:
@@ -163,12 +164,18 @@ class LeadScraper:
         return None
 
     @staticmethod
-    def _resolve_name(raw_name: Optional[str], text: str, url: str) -> str:
-        """Resolves a human-readable business name from raw name, page text, or domain."""
+    def _resolve_name(raw_name: Optional[str], text: str, url: str, page_title: Optional[str] = None) -> str:
+        """Resolves a human-readable business name from raw name, page title, page text, or domain."""
         if raw_name and len(raw_name.strip()) >= 2:
             return raw_name.strip()
 
-        # Try to find title in markdown header
+        # 1. Use HTML page title if clean
+        if page_title:
+            cleaned = re.split(r"[-|:•—]", page_title)[0].strip()
+            if len(cleaned) >= 2 and cleaned.lower() not in ["home", "welcome", "index"]:
+                return cleaned
+
+        # 2. Try to find title in markdown header
         title_match = re.search(r"^#\s+(.+)$", text, re.MULTILINE)
         if title_match:
             candidate = title_match.group(1).strip()
@@ -176,7 +183,7 @@ class LeadScraper:
             if parts and len(parts[0].strip()) >= 2:
                 return parts[0].strip()
 
-        # Domain fallback
+        # 3. Domain fallback
         domain = extract_domain(url)
         if domain:
             base = domain.split(".")[0]
@@ -213,81 +220,48 @@ class LeadScraper:
         url: str,
         initial_html: str,
         initial_contacts: Dict[str, Any],
+        business_name: Optional[str] = None,
         location: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Deep contact harvester: extracts mailto/tel, decodes Cloudflare XOR,
-        crawls internal /contact, /about, and /locations subpages in parallel, and synthesizes missing channels.
+        Deep ground-truth contact harvester: executes the 5-tier discovery cascade
+        (DOM parsing, Cloudflare XOR, Schema.org JSON-LD, subpage crawling,
+        passive DNS DMARC OSINT, and active search reconnaissance OSINT).
+        Zero synthetic guessing or fake placeholder generation.
         """
         domain = extract_domain(url)
-        domain_base = domain.split(".")[0] if domain else "business"
         
-        emails: List[str] = []
-        phones: List[str] = []
-        socials: Dict[str, str] = {}
-        address: Optional[str] = None
+        # 1. Base contact consolidation from initial page
+        base_contacts = {
+            "emails": initial_contacts.get("emails", []).copy() if initial_contacts else [],
+            "phones": initial_contacts.get("phones", []).copy() if initial_contacts else [],
+            "social_media": initial_contacts.get("social_media", {}).copy() if initial_contacts else {},
+        }
+
+        # Enrich via MilliLeadVerifier (Cloudflare XOR, Schema.org JSON-LD, meta tags, anti-spam)
+        enriched = MilliLeadVerifier.enrich_contacts(
+            html_text=initial_html,
+            domain=domain,
+            business_name=business_name or "",
+            location=location or "",
+            existing_contacts=base_contacts,
+            enable_dns_osint=False
+        )
+
+        emails: List[str] = enriched.get("emails", [])
+        phones: List[str] = enriched.get("phones", [])
+        socials: Dict[str, str] = enriched.get("social_media", {})
 
         soup = BeautifulSoup(initial_html, "html.parser")
-
-        # 1. Cloudflare data-cfemail deobfuscation
-        for elem in soup.select("[data-cfemail]"):
-            raw = elem.get("data-cfemail", "")
-            decoded = deobfuscate_cfemail(raw)
-            clean = self._clean_email(decoded)
-            if clean and clean not in emails:
-                emails.append(clean)
-
-        # 2. Authoritative mailto: and tel: links
-        for a in soup.find_all("a", href=True):
-            h = a["href"].strip()
-            if h.startswith("mailto:"):
-                raw_e = h.replace("mailto:", "").split("?")[0].strip()
-                clean_e = self._clean_email(raw_e)
-                if clean_e and clean_e not in emails:
-                    emails.append(clean_e)
-            elif h.startswith("tel:"):
-                raw_p = h.replace("tel:", "").strip()
-                if len(raw_p) >= 7 and raw_p not in phones:
-                    phones.append(raw_p)
-            elif "instagram.com/" in h and not any(x in h for x in ["/p/", "/explore", "/accounts", "/reels"]):
-                socials["instagram"] = h
-            elif "facebook.com/" in h and not any(x in h for x in ["sharer", "dialog", "share", "tr?id="]):
-                socials["facebook"] = h
-            elif "twitter.com/" in h or "x.com/" in h:
-                if not any(x in h for x in ["intent/tweet", "share?url"]):
-                    socials["twitter_x"] = h
-            elif "linkedin.com/company/" in h:
-                socials["linkedin"] = h
-            elif "tiktok.com/@" in h:
-                socials["tiktok"] = h
-            elif "youtube.com/@" in h or "youtube.com/channel/" in h:
-                socials["youtube"] = h
-
-        # 3. Add existing milli contacts
-        for e in initial_contacts.get("emails", []):
-            clean_e = self._clean_email(e)
-            if clean_e and clean_e not in emails:
-                emails.append(clean_e)
-
-        for p in initial_contacts.get("phones", []):
-            clean_p = p.strip()
-            if len(clean_p) >= 8 and clean_p not in phones and ("-" in clean_p or " " in clean_p or clean_p.startswith("+")):
-                phones.append(clean_p)
-
-        for k, v in initial_contacts.get("social_media", {}).items():
-            if v and k not in socials:
-                socials[k] = v
-
-        # 4. Extract Address
         address = self._extract_address(initial_html, soup)
 
-        # 5. Parallel Traversal to /contact, /about, /locations subpages if channels missing
-        if not emails or not phones or not address:
+        # 2. Parallel Traversal to /contact, /about, /impressum subpages if channels missing
+        if not emails or not phones or not address or ("instagram" not in socials and "facebook" not in socials):
             sub_links: List[str] = []
             for a in soup.find_all("a", href=True):
                 href = a["href"].strip()
                 text = a.get_text().strip().lower()
-                if any(w in href.lower() or w in text for w in ["contact", "kontakt", "impressum", "location", "about", "reach", "find-us"]):
+                if any(w in href.lower() or w in text for w in ["contact", "kontakt", "impressum", "imprint", "mentions", "location", "about", "reach", "privacy"]):
                     full = urllib.parse.urljoin(url, href)
                     if urllib.parse.urlparse(full).netloc == urllib.parse.urlparse(url).netloc and full != url and full not in sub_links:
                         sub_links.append(full)
@@ -295,7 +269,7 @@ class LeadScraper:
             # Sort subpages so contact / impressum pages are prioritized
             def _subpage_priority(link: str) -> int:
                 l_low = link.lower()
-                if any(k in l_low for k in ["contact", "kontakt", "impressum"]):
+                if any(k in l_low for k in ["contact", "kontakt", "impressum", "imprint"]):
                     return 0
                 if "location" in l_low:
                     return 1
@@ -304,11 +278,10 @@ class LeadScraper:
             sub_links.sort(key=_subpage_priority)
             candidate_subs = sub_links[:3]
 
-            # Parallel Subpage Crawling (Milli-Speed)
             async def _crawl_subpage(sub_url: str):
                 try:
                     return await asyncio.wait_for(
-                        self._scrape_with_pacing(sub_url, extract_contacts=True, prefer_fast_path=True),
+                        self._scrape_with_pacing(sub_url, extract_contacts=True),
                         timeout=DEFAULT_SUBPAGE_TIMEOUT
                     )
                 except Exception:
@@ -326,7 +299,8 @@ class LeadScraper:
                     for a in sub_soup.find_all("a", href=True):
                         h = a["href"].strip()
                         if h.startswith("mailto:"):
-                            clean_e = self._clean_email(h.replace("mailto:", "").split("?")[0].strip())
+                            raw_e = h.replace("mailto:", "").split("?")[0].strip()
+                            clean_e = self._clean_email(raw_e)
                             if clean_e and clean_e not in emails:
                                 emails.append(clean_e)
                         elif h.startswith("tel:"):
@@ -334,31 +308,76 @@ class LeadScraper:
                             if len(raw_p) >= 7 and raw_p not in phones:
                                 phones.append(raw_p)
 
-                    # Text regex on subpage markdown
-                    text_emails = re.findall(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,10}", sub_res.get("markdown", ""))
-                    for te in text_emails:
-                        clean_te = self._clean_email(te)
-                        if clean_te and clean_te not in emails:
-                            emails.append(clean_te)
+                    sub_contacts = sub_res.get("contacts", {})
+                    sub_enriched = MilliLeadVerifier.enrich_contacts(
+                        html_text=sub_html,
+                        domain=domain,
+                        existing_contacts=sub_contacts,
+                        enable_dns_osint=False
+                    )
+                    for em in sub_enriched.get("emails", []):
+                        if em not in emails:
+                            emails.append(em)
+                    for ph in sub_enriched.get("phones", []):
+                        if ph not in phones:
+                            phones.append(ph)
+                    for k, v in sub_enriched.get("social_media", {}).items():
+                        if k not in socials:
+                            socials[k] = v
+
+                    if not address:
+                        address = self._extract_address(sub_res.get("markdown", ""), sub_soup)
+                    for em in sub_enriched.get("emails", []):
+                        if em not in emails:
+                            emails.append(em)
+                    for ph in sub_enriched.get("phones", []):
+                        if ph not in phones:
+                            phones.append(ph)
+                    for k, v in sub_enriched.get("social_media", {}).items():
+                        if k not in socials:
+                            socials[k] = v
 
                     if not address:
                         address = self._extract_address(sub_res.get("markdown", ""), sub_soup)
 
-        # 6. Fallback Synthesis (Guarantees Verified Usable Leads as in 10k Benchmark)
+        # 3. Tier 3: Passive DNS DMARC OSINT (If emails still missing)
         if not emails and domain:
-            emails.append(f"info@{domain}")
+            dmarc_emails = MilliLeadVerifier.query_dns_dmarc_emails(domain)
+            for de in dmarc_emails:
+                if de not in emails:
+                    emails.append(de)
 
-        if not socials.get("instagram"):
-            socials["instagram"] = f"https://instagram.com/{domain_base}"
-        if not socials.get("facebook"):
-            socials["facebook"] = f"https://facebook.com/{domain_base}"
+        # 4. Tier 4: Active Search Reconnaissance OSINT (If socials still missing)
+        missing_socials = [p for p in ["instagram", "facebook"] if p not in socials]
+        if missing_socials and business_name:
+            try:
+                discovered_osint = await asyncio.wait_for(
+                    MilliLeadVerifier.discover_socials_osint(
+                        business_name=business_name,
+                        location=location or "",
+                        missing_platforms=missing_socials
+                    ),
+                    timeout=2.0
+                )
+                for k, v in discovered_osint.items():
+                    if k not in socials:
+                        socials[k] = v
+            except Exception:
+                pass
 
-        if not address and location:
-            address = f"{location}"
+        # 5. Clean, validate, and normalize phone numbers and emails
+        clean_emails = [self._clean_email(e) for e in emails if self._clean_email(e)]
+        clean_emails = list(dict.fromkeys(clean_emails))
+
+        clean_phones = []
+        for p in phones:
+            norm = MilliLeadVerifier.normalize_phone_number(p)
+            if norm and norm not in clean_phones:
+                clean_phones.append(norm)
 
         return {
-            "emails": emails,
-            "phones": phones,
+            "emails": clean_emails,
+            "phones": clean_phones,
             "social_media": socials,
             "address": address,
         }
@@ -385,7 +404,6 @@ class LeadScraper:
             result = await self._scrape_with_pacing(
                 url=parsed_url,
                 extract_contacts=True,
-                prefer_fast_path=True,
             )
         except Exception:
             try:
@@ -393,11 +411,11 @@ class LeadScraper:
                     result = await self.scraper.scrape_url(
                         url=parsed_url,
                         extract_contacts=True,
-                        force_browser=True,
                     )
             except Exception:
                 domain = extract_domain(parsed_url)
                 geo = self._resolve_geo(location, None)
+                dmarc_emails = MilliLeadVerifier.query_dns_dmarc_emails(domain) if domain else []
                 lead = Lead(
                     id=lead_id,
                     business_name=business_name or domain.title(),
@@ -408,22 +426,24 @@ class LeadScraper:
                     country=geo["country"],
                     category=category,
                     cuisine=cuisine,
-                    emails=[f"info@{domain}"] if domain else [],
-                    social_media={"instagram": f"https://instagram.com/{domain}"} if domain else {},
-                    status="partial_fallback",
+                    emails=dmarc_emails,
+                    social_media={},
+                    status="unreachable",
                 )
                 lead.calculate_confidence()
                 return lead
 
         initial_html = result.get("html", "")
         markdown_text = result.get("markdown", "")
-        resolved_name = self._resolve_name(business_name, markdown_text, parsed_url)
+        page_title = result.get("title")
+        resolved_name = self._resolve_name(business_name, markdown_text, parsed_url, page_title=page_title)
 
         # Deep contact harvesting
         deep_data = await self._deep_harvest_contacts(
             url=parsed_url,
             initial_html=initial_html,
             initial_contacts=result.get("contacts", {}),
+            business_name=resolved_name,
             location=location,
         )
 

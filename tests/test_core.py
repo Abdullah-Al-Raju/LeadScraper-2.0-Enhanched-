@@ -85,3 +85,30 @@ async def test_pace_domain():
     await scraper._pace_domain("example.com")
     assert "example.com" in scraper._domain_last_request
 
+
+@pytest.mark.asyncio
+async def test_zero_synthetic_fallbacks():
+    scraper = LeadScraper(headless=True)
+    mock_empty_site = {
+        "status": 200,
+        "elapsed_ms": 45.0,
+        "engine": "fast_http",
+        "html": "<html><body><h1>Local Workshop</h1><p>Call us at 206-555-0199</p></body></html>",
+        "markdown": "# Local Workshop\nCall us at 206-555-0199",
+        "contacts": {
+            "emails": [],
+            "phones": ["206-555-0199"],
+            "social_media": {},
+        }
+    }
+    scraper.scraper.scrape_url = AsyncMock(return_value=mock_empty_site)
+    with patch("lead_scraper.lead_verifier.MilliLeadVerifier.query_dns_dmarc_emails", return_value=[]):
+        with patch("lead_scraper.lead_verifier.MilliLeadVerifier.discover_socials_osint", return_value={}):
+            lead = await scraper.scrape_website("https://localworkshop12345.com")
+            # Verify ZERO synthetic hallucinated data
+            assert lead.emails == []
+            assert lead.social_media == {}
+            # Verify authentic phone normalized to E.164
+            assert "+12065550199" in lead.phones or "+1-206-555-0199" in lead.phones
+
+
