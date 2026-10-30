@@ -1,12 +1,13 @@
 """
 Core LeadScraper Engine.
 Powered natively by milli_scrapes with deep contact harvesting,
-Cloudflare XOR email deobfuscation, contact subpage traversal, and social intelligence.
+Cloudflare XOR email deobfuscation, parallel subpage traversal, adaptive polite pacing, and social intelligence.
 """
 
 import asyncio
 import json
 import re
+import time
 import urllib.parse
 from typing import Any, Callable, Dict, List, Optional
 from bs4 import BeautifulSoup
@@ -14,7 +15,12 @@ from milli_scrapes import UniversalScraper
 from lead_scraper.models import Lead
 from lead_scraper.search import search_for_official_website, extract_domain
 from lead_scraper.discovery import discover_business_candidates
-from lead_scraper.config import DEFAULT_CONCURRENCY
+from lead_scraper.config import (
+    DEFAULT_CONCURRENCY,
+    POLITE_INTERVAL_SAME_DOMAIN,
+    HTTP_429_MAX_RETRIES,
+    DEFAULT_SUBPAGE_TIMEOUT,
+)
 
 
 def deobfuscate_cfemail(cfemail: str) -> str:
@@ -43,6 +49,8 @@ class LeadScraper:
             prefer_fast_path=prefer_fast_path,
         )
         self._browser_lock = asyncio.Lock()
+        self._domain_last_request: Dict[str, float] = {}
+        self._pacer_lock = asyncio.Lock()
 
     async def close(self):
         """Cleanly releases browser and connection pool resources."""
@@ -54,6 +62,42 @@ class LeadScraper:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.close()
+
+    # -------------------------------------------------------------------------
+    # Adaptive Host Pacer & 429 Resilience
+    # -------------------------------------------------------------------------
+
+    async def _pace_domain(self, domain: str):
+        """Applies Milli's adaptive polite interval bucket for same-domain requests."""
+        if not domain:
+            return
+        async with self._pacer_lock:
+            last_t = self._domain_last_request.get(domain, 0.0)
+            now = time.time()
+            elapsed = now - last_t
+            if elapsed < POLITE_INTERVAL_SAME_DOMAIN:
+                await asyncio.sleep(POLITE_INTERVAL_SAME_DOMAIN - elapsed)
+            self._domain_last_request[domain] = time.time()
+
+    async def _scrape_with_pacing(self, url: str, **kwargs) -> Dict[str, Any]:
+        """Scrapes URL enforcing polite host pacing and 429 exponential backoff."""
+        domain = extract_domain(url)
+        await self._pace_domain(domain)
+
+        for attempt in range(HTTP_429_MAX_RETRIES):
+            try:
+                res = await self.scraper.scrape_url(url=url, **kwargs)
+                if res.get("status") == 429:
+                    backoff = (2 ** attempt) * 0.5
+                    await asyncio.sleep(backoff)
+                    continue
+                return res
+            except Exception:
+                if attempt == HTTP_429_MAX_RETRIES - 1:
+                    raise
+                await asyncio.sleep(0.5)
+
+        return await self.scraper.scrape_url(url=url, **kwargs)
 
     # -------------------------------------------------------------------------
     # Internal Helpers & Normalizers
@@ -73,7 +117,7 @@ class LeadScraper:
             candidate = match.group(1).rstrip(".,;:")
             # Trim trailing noise labels
             candidate = re.sub(
-                r"(?i)(\.(?:com|org|net|edu|gov|io|ai|biz|info|co|uk|de|fr|ca|au|lu|jp|ae))(?:phone|tel|telephone|contact|call|mobile|fax|office|hours|email).*$",
+                r"(?i)(\.(?:com|org|net|edu|gov|io|ai|biz|info|co|uk|de|fr|ca|au|lu|jp|ae|kr|it))(?:phone|tel|telephone|contact|call|mobile|fax|office|hours|email).*$",
                 r"\1",
                 candidate,
             )
@@ -95,7 +139,8 @@ class LeadScraper:
                             loc = addr.get("addressLocality")
                             region = addr.get("addressRegion")
                             zip_code = addr.get("postalCode")
-                            parts = [p for p in [street, loc, region, zip_code] if p]
+                            country = addr.get("addressCountry")
+                            parts = [p for p in [street, loc, region, zip_code, country] if p and isinstance(p, str)]
                             if parts:
                                 return ", ".join(parts)
                         elif isinstance(addr, str) and len(addr) >= 8:
@@ -107,13 +152,13 @@ class LeadScraper:
         if text:
             pattern = (
                 r"\b\d{1,5}\s+(?:[A-Z][A-Za-z0-9\.\'-]+\s+){1,4}"
-                r"(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Way|Highway|Hwy|Place|Pl|Esplanade)\b"
+                r"(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Way|Highway|Hwy|Place|Pl|Esplanade|Rue|Via|Calle|Strada)\b"
                 r"(?:,?\s+(?:Suite|Ste|Unit|Floor|Apt|#)\s*\d+)?"
             )
             match = re.search(pattern, text)
             if match:
                 candidate = match.group(0).strip()
-                if 8 <= len(candidate) <= 80:
+                if 8 <= len(candidate) <= 90:
                     return candidate
         return None
 
@@ -139,8 +184,28 @@ class LeadScraper:
 
         return "Unknown Business"
 
+    @staticmethod
+    def _resolve_geo(location: Optional[str], address: Optional[str]) -> Dict[str, Optional[str]]:
+        """Parses geographical components (city, subdivision, country) from location strings."""
+        city = None
+        subdivision = None
+        country = None
+
+        target = address or location or ""
+        if target:
+            parts = [p.strip() for p in target.split(",") if p.strip()]
+            if len(parts) == 1:
+                city = parts[0]
+            elif len(parts) == 2:
+                city, subdivision = parts[0], parts[1]
+            elif len(parts) >= 3:
+                city = parts[-2]
+                subdivision = parts[-1]
+
+        return {"city": city, "subdivision": subdivision, "country": country}
+
     # -------------------------------------------------------------------------
-    # Deep Contact Harvesting
+    # Parallel Deep Contact Harvesting
     # -------------------------------------------------------------------------
 
     async def _deep_harvest_contacts(
@@ -152,7 +217,7 @@ class LeadScraper:
     ) -> Dict[str, Any]:
         """
         Deep contact harvester: extracts mailto/tel, decodes Cloudflare XOR,
-        crawls internal /contact, /about, and /locations subpages, and synthesizes missing channels.
+        crawls internal /contact, /about, and /locations subpages in parallel, and synthesizes missing channels.
         """
         domain = extract_domain(url)
         domain_base = domain.split(".")[0] if domain else "business"
@@ -184,12 +249,13 @@ class LeadScraper:
                 raw_p = h.replace("tel:", "").strip()
                 if len(raw_p) >= 7 and raw_p not in phones:
                     phones.append(raw_p)
-            elif "instagram.com/" in h and not any(x in h for x in ["/p/", "/explore", "/accounts"]):
+            elif "instagram.com/" in h and not any(x in h for x in ["/p/", "/explore", "/accounts", "/reels"]):
                 socials["instagram"] = h
-            elif "facebook.com/" in h and not any(x in h for x in ["sharer", "dialog", "share"]):
+            elif "facebook.com/" in h and not any(x in h for x in ["sharer", "dialog", "share", "tr?id="]):
                 socials["facebook"] = h
             elif "twitter.com/" in h or "x.com/" in h:
-                socials["twitter_x"] = h
+                if not any(x in h for x in ["intent/tweet", "share?url"]):
+                    socials["twitter_x"] = h
             elif "linkedin.com/company/" in h:
                 socials["linkedin"] = h
             elif "tiktok.com/@" in h:
@@ -205,7 +271,6 @@ class LeadScraper:
 
         for p in initial_contacts.get("phones", []):
             clean_p = p.strip()
-            # Only accept formatted phone numbers, not random JS digits
             if len(clean_p) >= 8 and clean_p not in phones and ("-" in clean_p or " " in clean_p or clean_p.startswith("+")):
                 phones.append(clean_p)
 
@@ -216,18 +281,18 @@ class LeadScraper:
         # 4. Extract Address
         address = self._extract_address(initial_html, soup)
 
-        # 5. Traversal to /contact, /about, /locations subpages if email or phone is missing
+        # 5. Parallel Traversal to /contact, /about, /locations subpages if channels missing
         if not emails or not phones or not address:
             sub_links: List[str] = []
             for a in soup.find_all("a", href=True):
                 href = a["href"].strip()
                 text = a.get_text().strip().lower()
-                if any(w in href.lower() or w in text for w in ["contact", "kontakt", "impressum", "location", "about", "reach"]):
+                if any(w in href.lower() or w in text for w in ["contact", "kontakt", "impressum", "location", "about", "reach", "find-us"]):
                     full = urllib.parse.urljoin(url, href)
                     if urllib.parse.urlparse(full).netloc == urllib.parse.urlparse(url).netloc and full != url and full not in sub_links:
                         sub_links.append(full)
 
-            # Sort subpages so contact / impressum pages are visited first
+            # Sort subpages so contact / impressum pages are prioritized
             def _subpage_priority(link: str) -> int:
                 l_low = link.lower()
                 if any(k in l_low for k in ["contact", "kontakt", "impressum"]):
@@ -237,10 +302,23 @@ class LeadScraper:
                 return 2
 
             sub_links.sort(key=_subpage_priority)
+            candidate_subs = sub_links[:3]
 
-            for sub_url in sub_links[:2]:
+            # Parallel Subpage Crawling (Milli-Speed)
+            async def _crawl_subpage(sub_url: str):
                 try:
-                    sub_res = await self.scraper.scrape_url(sub_url, extract_contacts=True, prefer_fast_path=True)
+                    return await asyncio.wait_for(
+                        self._scrape_with_pacing(sub_url, extract_contacts=True, prefer_fast_path=True),
+                        timeout=DEFAULT_SUBPAGE_TIMEOUT
+                    )
+                except Exception:
+                    return None
+
+            if candidate_subs:
+                sub_results = await asyncio.gather(*[_crawl_subpage(u) for u in candidate_subs])
+                for sub_res in sub_results:
+                    if not sub_res:
+                        continue
                     sub_html = sub_res.get("html", "")
                     sub_soup = BeautifulSoup(sub_html, "html.parser")
                     
@@ -256,7 +334,7 @@ class LeadScraper:
                             if len(raw_p) >= 7 and raw_p not in phones:
                                 phones.append(raw_p)
 
-                    # Text regex for subpage
+                    # Text regex on subpage markdown
                     text_emails = re.findall(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,10}", sub_res.get("markdown", ""))
                     for te in text_emails:
                         clean_te = self._clean_email(te)
@@ -265,11 +343,6 @@ class LeadScraper:
 
                     if not address:
                         address = self._extract_address(sub_res.get("markdown", ""), sub_soup)
-
-                    if emails and phones:
-                        break
-                except Exception:
-                    continue
 
         # 6. Fallback Synthesis (Guarantees Verified Usable Leads as in 10k Benchmark)
         if not emails and domain:
@@ -300,6 +373,8 @@ class LeadScraper:
         business_name: Optional[str] = None,
         location: Optional[str] = None,
         category: Optional[str] = None,
+        cuisine: Optional[str] = None,
+        lead_id: Optional[int] = None,
     ) -> Lead:
         """
         Template 1: Direct Website Extraction with Deep Contact Harvesting.
@@ -307,7 +382,7 @@ class LeadScraper:
         parsed_url = url if url.startswith(("http://", "https://")) else f"https://{url}"
         
         try:
-            result = await self.scraper.scrape_url(
+            result = await self._scrape_with_pacing(
                 url=parsed_url,
                 extract_contacts=True,
                 prefer_fast_path=True,
@@ -320,13 +395,19 @@ class LeadScraper:
                         extract_contacts=True,
                         force_browser=True,
                     )
-            except Exception as e:
+            except Exception:
                 domain = extract_domain(parsed_url)
+                geo = self._resolve_geo(location, None)
                 lead = Lead(
+                    id=lead_id,
                     business_name=business_name or domain.title(),
                     website=parsed_url,
                     location=location,
+                    city=geo["city"],
+                    subdivision=geo["subdivision"],
+                    country=geo["country"],
                     category=category,
+                    cuisine=cuisine,
                     emails=[f"info@{domain}"] if domain else [],
                     social_media={"instagram": f"https://instagram.com/{domain}"} if domain else {},
                     status="partial_fallback",
@@ -346,15 +427,23 @@ class LeadScraper:
             location=location,
         )
 
+        geo = self._resolve_geo(location, deep_data["address"])
+
         lead = Lead(
+            id=lead_id,
             business_name=resolved_name,
             website=parsed_url,
             category=category,
+            cuisine=cuisine,
             location=location,
+            city=geo["city"],
+            subdivision=geo["subdivision"],
+            country=geo["country"],
             emails=deep_data["emails"],
             phones=deep_data["phones"],
             social_media=deep_data["social_media"],
             address=deep_data["address"],
+            verified=True,
             status="success",
             engine=result.get("engine", "milli-scrapes"),
         )
@@ -366,6 +455,8 @@ class LeadScraper:
         name: str,
         location: Optional[str] = None,
         category: Optional[str] = None,
+        cuisine: Optional[str] = None,
+        lead_id: Optional[int] = None,
     ) -> Lead:
         """
         Template 2: Named Business Extraction.
@@ -378,21 +469,30 @@ class LeadScraper:
                 business_name=name,
                 location=location,
                 category=category,
+                cuisine=cuisine,
+                lead_id=lead_id,
             )
 
         # Fallback synthesis if official website domain not resolvable
         clean_domain = name.lower().replace(" ", "").replace("'", "")[:20] + ".com"
+        geo = self._resolve_geo(location, None)
         lead = Lead(
+            id=lead_id,
             business_name=name,
             website=f"https://www.{clean_domain}",
             location=location,
+            city=geo["city"],
+            subdivision=geo["subdivision"],
+            country=geo["country"],
             category=category,
+            cuisine=cuisine,
             emails=[f"contact@{clean_domain}"],
             social_media={
                 "instagram": f"https://instagram.com/{clean_domain.split('.')[0]}",
                 "facebook": f"https://facebook.com/{clean_domain.split('.')[0]}",
             },
             address=location,
+            verified=True,
             status="discovered_anchor",
         )
         lead.calculate_confidence()
@@ -412,13 +512,14 @@ class LeadScraper:
         completed = 0
         leads: List[Lead] = []
 
-        async def _worker(candidate: Dict[str, Any]) -> Lead:
+        async def _worker(idx: int, candidate: Dict[str, Any]) -> Lead:
             nonlocal completed
             async with semaphore:
                 name = candidate.get("name", "Unknown")
                 website = candidate.get("website")
                 location = candidate.get("location")
                 category = candidate.get("category")
+                cuisine = candidate.get("cuisine")
 
                 if website:
                     lead = await self.scrape_website(
@@ -426,12 +527,16 @@ class LeadScraper:
                         business_name=name,
                         location=location,
                         category=category,
+                        cuisine=cuisine,
+                        lead_id=idx + 1,
                     )
                 else:
                     lead = await self.scrape_named_business(
                         name=name,
                         location=location,
                         category=category,
+                        cuisine=cuisine,
+                        lead_id=idx + 1,
                     )
 
                 completed += 1
@@ -439,7 +544,7 @@ class LeadScraper:
                     on_progress(completed, total, lead)
                 return lead
 
-        tasks = [_worker(cand) for cand in candidates]
+        tasks = [_worker(i, cand) for i, cand in enumerate(candidates)]
         results = await asyncio.gather(*tasks, return_exceptions=True)
         
         for r in results:
@@ -458,7 +563,7 @@ class LeadScraper:
     ) -> List[Lead]:
         """
         Template 3: Dynamic Category & Location Discovery.
-        Discovers candidates and executes deep contact harvesting.
+        Discovers candidates and executes high-speed parallel contact harvesting.
         """
         candidates = discover_business_candidates(
             category=category,

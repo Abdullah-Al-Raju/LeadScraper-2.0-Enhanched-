@@ -11,9 +11,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_DIR = PROJECT_ROOT / "output"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Engine Settings
-DEFAULT_CONCURRENCY = 5
+# Engine Settings - Milli Fastness & Polite Pacing
+DEFAULT_CONCURRENCY = 25
 DEFAULT_TIMEOUT_SECONDS = 15
+DEFAULT_SUBPAGE_TIMEOUT = 4.0
+POLITE_INTERVAL_SAME_DOMAIN = 0.05  # 50ms token bucket per host
+HTTP_429_MAX_RETRIES = 3
 MAX_SEARCH_RESULTS_PER_QUERY = 15
 
 # Domain Aggregators & Directories Blacklist (Filtered out to prioritize official business websites)

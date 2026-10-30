@@ -67,3 +67,21 @@ async def test_scrape_named_business():
         lead = await scraper.scrape_named_business("Tartine Bakery", "San Francisco")
         assert lead.business_name == "Tartine Bakery"
         assert lead.website == "https://tartinebakery.com"
+
+
+def test_resolve_geo():
+    geo1 = LeadScraper._resolve_geo("Seattle, WA, USA", None)
+    assert geo1["city"] == "WA"
+    assert geo1["subdivision"] == "USA"
+
+    geo2 = LeadScraper._resolve_geo("Austin, TX", None)
+    assert geo2["city"] == "Austin"
+    assert geo2["subdivision"] == "TX"
+
+
+@pytest.mark.asyncio
+async def test_pace_domain():
+    scraper = LeadScraper(headless=True)
+    await scraper._pace_domain("example.com")
+    assert "example.com" in scraper._domain_last_request
+
